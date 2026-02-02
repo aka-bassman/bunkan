@@ -1,0 +1,33 @@
+{
+  "name": "@akanjs/common",
+  "version": "1.0.7",
+  "sourceType": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://akanjs.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akan-team/akanjs.git",
+    "directory": "pkgs/@akanjs/common"
+  },
+  "main": "./index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "pluralize": "^8.0.0"
+  },
+  "exports": {
+    ".": {
+      "require": "./cjs/index.js",
+      "import": "./esm/index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "esbuild": {
+    "platform": "neutral"
+  }
+}
