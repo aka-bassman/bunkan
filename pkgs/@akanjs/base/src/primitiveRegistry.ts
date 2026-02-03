@@ -17,51 +17,49 @@ export class BaseInsight {
   declare count: number;
 }
 
-export class ScalarRegistry {
-  static readonly #nameScalarMap = new Map<string, PrimitiveScalar>();
-  static readonly #scalarNameMap = new Map<PrimitiveScalar, string>();
-  static registerScalar(
-    scalar: typeof PrimitiveScalar,
-    { overwrite = false } = {},
-  ) {
+export class PrimitiveRegistry {
+  static readonly #namePrimitiveMap = new Map<string, PrimitiveScalar>();
+  static readonly #primitiveNameMap = new Map<PrimitiveScalar, string>();
+  static register(scalar: typeof PrimitiveScalar, { overwrite = false } = {}) {
     if (
       !overwrite &&
-      (this.#nameScalarMap.has(scalar.$scalarName) ||
-        this.#scalarNameMap.has(scalar))
+      (this.#namePrimitiveMap.has(scalar.$scalarName) ||
+        this.#primitiveNameMap.has(scalar))
     )
       throw new Error(`Scalar ${scalar.$scalarName} already registered`);
-    this.#nameScalarMap.set(scalar.$scalarName, scalar);
-    this.#scalarNameMap.set(scalar, scalar.$scalarName);
+    this.#namePrimitiveMap.set(scalar.$scalarName, scalar);
+    this.#primitiveNameMap.set(scalar, scalar.$scalarName);
   }
-  static getScalar(name: string): PrimitiveScalar | undefined {
-    const scalar = this.#nameScalarMap.get(name);
+  static get(name: string): PrimitiveScalar {
+    const scalar = this.#namePrimitiveMap.get(name);
     if (!scalar) throw new Error(`Scalar ${name} not found`);
     return scalar;
   }
-  static getScalarName(scalar: PrimitiveScalar): string | undefined {
-    const name = this.#scalarNameMap.get(scalar);
+  static getName(scalar: PrimitiveScalar): string {
+    const name = this.#primitiveNameMap.get(scalar);
     if (!name) throw new Error(`Scalar ${scalar} not found`);
     return name;
   }
-  static isScalar(modelRef: Cls): boolean {
-    return this.#scalarNameMap.has(modelRef);
+  static has(modelRef: Cls): boolean {
+    return this.#primitiveNameMap.has(modelRef);
   }
-  static isScalarName(name: string): boolean {
-    return this.#nameScalarMap.has(name);
+  static hasName(name: string): boolean {
+    return this.#namePrimitiveMap.has(name);
   }
-  static getScalarNames(): string[] {
-    return [...this.#nameScalarMap.keys()];
+  static getNames(): string[] {
+    return [...this.#namePrimitiveMap.keys()];
   }
-  static getScalars(): PrimitiveScalar[] {
-    return [...this.#nameScalarMap.values()];
+  static getAll(): PrimitiveScalar[] {
+    return [...this.#namePrimitiveMap.values()];
   }
 }
 
 export class PrimitiveScalar {
   static $scalarName: string;
-  static $serverValue: any;
-  static $clientValue: any;
-  static $defaultValue: any = null;
+  static $serverValue: unknown;
+  static $clientValue: unknown;
+  static $defaultValue: unknown = null;
+  static $exampleValue: unknown = null;
 
   static validate(value: any): boolean {
     return true;
@@ -92,6 +90,7 @@ export class Int extends PrimitiveScalar {
   static override $serverValue: number;
   static override $clientValue: number;
   static override $defaultValue: number = 0;
+  static override $exampleValue: number = 0;
 
   static override validate(value: any): boolean {
     return typeof value === "number" && Number.isSafeInteger(value);
@@ -103,13 +102,14 @@ export class Int extends PrimitiveScalar {
     return value;
   }
 }
-ScalarRegistry.registerScalar(Int);
+PrimitiveRegistry.register(Int);
 
 export class Float extends PrimitiveScalar {
   static override $scalarName: "Float" = "Float";
   static override $serverValue: number;
   static override $clientValue: number;
   static override $defaultValue: number = 0;
+  static override $exampleValue: number = 0;
 
   static override validate(value: any): boolean {
     return typeof value === "number" && Number.isFinite(value);
@@ -121,13 +121,14 @@ export class Float extends PrimitiveScalar {
     return value;
   }
 }
-ScalarRegistry.registerScalar(Float);
+PrimitiveRegistry.register(Float);
 
 export class ID extends PrimitiveScalar {
   static override $scalarName: "ID" = "ID";
   static override $serverValue: string;
   static override $clientValue: string;
   static override $defaultValue: string = "000000000000000000000000";
+  static override $exampleValue: string = "1234567890abcdef12345678";
 
   static override validate(value: any): boolean {
     if (typeof value !== "string") return false;
@@ -140,7 +141,7 @@ export class ID extends PrimitiveScalar {
     return String(value);
   }
 }
-ScalarRegistry.registerScalar(ID);
+PrimitiveRegistry.register(ID);
 
 export class Any<
   ServerValue = any,
@@ -148,8 +149,9 @@ export class Any<
 > extends PrimitiveScalar {
   static override $scalarName: "Any" = "Any";
   static override $defaultValue: any = null;
+  static override $exampleValue: any = {};
 }
-ScalarRegistry.registerScalar(Any);
+PrimitiveRegistry.register(Any);
 
 export class Upload extends PrimitiveScalar {
   static override $scalarName: "Upload" = "Upload";
@@ -161,8 +163,9 @@ export class Upload extends PrimitiveScalar {
     createReadStream: () => ReadStream | Readable;
   };
   static override $defaultValue: any = null;
+  static override $exampleValue = "FileUpload";
 }
-ScalarRegistry.registerScalar(Upload);
+PrimitiveRegistry.register(Upload);
 
 declare global {
   interface StringConstructor {
@@ -170,6 +173,7 @@ declare global {
     $serverValue: string;
     $clientValue: string;
     $defaultValue: string;
+    $exampleValue: string;
     validate(value: any): boolean;
     parseValue(input: any): string;
     serializeValue(value: string): string;
@@ -182,6 +186,7 @@ declare global {
     $serverValue: boolean;
     $clientValue: boolean;
     $defaultValue: boolean;
+    $exampleValue: boolean;
     validate(value: any): boolean;
     parseValue(input: any): boolean;
     serializeValue(value: boolean): boolean;
@@ -194,6 +199,7 @@ declare global {
     $serverValue: Dayjs;
     $clientValue: Dayjs;
     $defaultValue: Dayjs;
+    $exampleValue: string;
     validate(value: any): boolean;
     parseValue(input: any): Dayjs;
     serializeValue(value: Date): string;
@@ -203,10 +209,28 @@ declare global {
   }
 }
 
+const scalarPrimitiveStatics = {
+  _parse(this: typeof PrimitiveScalar, input: any): any {
+    const value = this.parseValue(input);
+    this._checkValue(value);
+    return value;
+  },
+  _serialize(this: typeof PrimitiveScalar, value: any): any {
+    this._checkValue(value);
+    return this.serializeValue(value);
+  },
+  _checkValue(this: typeof PrimitiveScalar, value: any): void {
+    if (!this.validate(value))
+      throw new Error(`Invalid ${this.$scalarName} value: ${value}`);
+  },
+};
+
 // String
 Object.assign(String, {
+  ...scalarPrimitiveStatics,
   $scalarName: "String",
   $defaultValue: "",
+  $exampleValue: "String",
   validate(value: any) {
     return typeof value === "string";
   },
@@ -217,12 +241,14 @@ Object.assign(String, {
     return String(value);
   },
 });
-ScalarRegistry.registerScalar(String);
+PrimitiveRegistry.register(String);
 
 // Boolean
 Object.assign(Boolean, {
+  ...scalarPrimitiveStatics,
   $scalarName: "Boolean",
   $defaultValue: false,
+  $exampleValue: true,
   validate(value: any) {
     return typeof value === "boolean";
   },
@@ -233,12 +259,14 @@ Object.assign(Boolean, {
     return Boolean(value);
   },
 });
-ScalarRegistry.registerScalar(Boolean);
+PrimitiveRegistry.register(Boolean);
 
 // Date
 Object.assign(Date, {
+  ...scalarPrimitiveStatics,
   $scalarName: "Date",
   $defaultValue: dayjs(new Date(-1)),
+  $exampleValue: dayjs(new Date().toISOString()),
   validate(value: any) {
     const date = new Date(value);
     if (isNaN(date.getTime())) return false;
@@ -248,10 +276,10 @@ Object.assign(Date, {
     return dayjs(input);
   },
   serializeValue(value: Dayjs) {
-    return value.toISOString();
+    return value.toDate();
   },
 });
-ScalarRegistry.registerScalar(Date);
+PrimitiveRegistry.register(Date);
 
 // export type SingleFieldType =
 //   | Int

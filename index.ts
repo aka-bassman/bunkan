@@ -1,5 +1,13 @@
-import { baseEnv, Int, Float, PrimitiveScalar } from "@akanjs/base";
+import {
+  baseEnv,
+  Int,
+  Float,
+  PrimitiveScalar,
+  enumOf,
+  dayjs,
+} from "@akanjs/base";
 import { Logger } from "@akanjs/common";
+import { ConstantRegistry, via } from "@akanjs/constant";
 
 console.log(baseEnv);
 const a = new Float();
@@ -10,6 +18,61 @@ console.log(
 );
 
 Logger.info("Hello, world!");
+
+export class AdminRole extends enumOf("adminRole", [
+  "manager",
+  "admin",
+  "superAdmin",
+] as const) {}
+
+export class AdminInput extends via((field) => ({
+  accountId: field(String, {
+    type: "email",
+    example: "hello@naver.com",
+    text: "search",
+  }),
+})) {}
+
+console.log("hi", AdminInput.modelType);
+
+export class AdminObject extends via(AdminInput, (field) => ({
+  password: field(String, {
+    type: "password",
+    example: "qwer1234",
+    minlength: 8,
+  }).optional(),
+  roles: field([AdminRole], { example: ["admin", "superAdmin"] }),
+  lastLoginAt: field(Date, { default: () => dayjs(), example: dayjs() }),
+})) {}
+
+export class LightAdmin extends via(
+  AdminObject,
+  ["accountId", "roles"] as const,
+  (resolve) => ({}),
+) {
+  hasAccess(role: AdminRole["value"]) {
+    if (role === "superAdmin") return this.roles.includes("superAdmin");
+    if (role === "admin")
+      return this.roles.includes("superAdmin") || this.roles.includes("admin");
+    else return false;
+  }
+}
+
+export class Admin extends via(AdminObject, LightAdmin, (resolve) => ({})) {}
+
+export class AdminInsight extends via(Admin, (field) => ({})) {}
+
+const admin = ConstantRegistry.buildModel(
+  "admin" as const,
+  AdminInput,
+  AdminObject,
+  Admin,
+  LightAdmin,
+  AdminInsight,
+);
+
+console.log(AdminInput.field, AdminInput.modelType);
+
 // import { graphql, buildSchema, GraphQLSchema } from "graphql"; // ✅ 이것만
 
 // const graphiqlHtml = `

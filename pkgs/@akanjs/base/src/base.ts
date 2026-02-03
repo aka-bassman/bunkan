@@ -1,5 +1,5 @@
 import type { Cls } from ".";
-import { Float, Int } from "./scalar";
+import { Float, Int } from "./primitiveRegistry";
 
 class EnumPrototype {}
 export type EnumInstance<

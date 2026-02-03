@@ -28,7 +28,8 @@
 
     "paths": {
       "@akanjs/base": ["./pkgs/@akanjs/base/index.ts"],
-      "@akanjs/common": ["./pkgs/@akanjs/common/index.ts"]
+      "@akanjs/common": ["./pkgs/@akanjs/common/index.ts"],
+      "@akanjs/constant": ["./pkgs/@akanjs/constant/index.ts"]
     }
   }
 }
