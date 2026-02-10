@@ -8,14 +8,16 @@ import {
 } from "@akanjs/base";
 import { Logger } from "@akanjs/common";
 import { ConstantRegistry, via } from "@akanjs/constant";
-
-console.log(baseEnv);
-const a = new Float();
-console.log(
-  Float.prototype instanceof PrimitiveScalar,
-  Float.prototype instanceof Float,
-  Float.prototype instanceof Int,
-);
+import {
+  DatabaseRegistry,
+  FILTER_META_KEY,
+  beyond,
+  by,
+  from,
+  into,
+  type SchemaOf,
+} from "@akanjs/document";
+import { INJECT_META_KEY, adapt, serve } from "@akanjs/service";
 
 Logger.info("Hello, world!");
 
@@ -32,8 +34,6 @@ export class AdminInput extends via((field) => ({
     text: "search",
   }),
 })) {}
-
-console.log("hi", AdminInput.modelType);
 
 export class AdminObject extends via(AdminInput, (field) => ({
   password: field(String, {
@@ -72,6 +72,91 @@ const admin = ConstantRegistry.buildModel(
 );
 
 console.log(AdminInput.field, AdminInput.modelType);
+
+export class AdminFilter extends from(Admin, (filter) => ({
+  query: {
+    byAccountId: filter()
+      .arg("accountId", String)
+      .query((accountId) => ({ accountId })),
+  },
+  sort: {},
+})) {}
+
+class DbAdminInput extends by(AdminInput) {}
+export class DbAdmin extends by(Admin) {
+  addRole(role: AdminRole["value"]) {
+    if (!this.roles.includes(role)) this.roles = [...this.roles, role];
+    return this;
+  }
+  subRole(role: AdminRole["value"]) {
+    this.roles = this.roles.filter((r) => r !== role);
+    return this;
+  }
+  updateAccess() {
+    this.lastLoginAt = dayjs();
+    return this;
+  }
+}
+
+export class AdminModel extends into(
+  Admin,
+  AdminFilter,
+  admin,
+  ({ byField }) => ({
+    adminAccountIdLoader: byField("accountId"),
+  }),
+) {
+  async hasAnotherAdmin(accountId: string) {
+    const exists = await this.Admin.exists({
+      accountId: { $ne: accountId },
+      status: "active",
+    });
+    return !!exists;
+  }
+  async getAdminSecret(
+    accountId: string,
+  ): Promise<{ id: string; roles: AdminRole["value"][]; password: string }> {
+    const adminSecret = await this.Admin.pickOne(
+      { accountId, removedAt: { $exists: false } },
+      { roles: true, password: true },
+    );
+    return adminSecret as {
+      id: string;
+      roles: AdminRole["value"][];
+      password: string;
+    };
+  }
+}
+export class AdminMiddleware extends beyond(AdminModel, Admin) {}
+
+export class Authorizer extends adapt("authorizer", ({ use }) => ({
+  hello: use<string>(),
+})) {
+  test() {
+    console.log(this.hello);
+    this.logger.info("test");
+  }
+}
+export const dbAdmin = DatabaseRegistry.buildModel(
+  "admin" as const,
+  DbAdminInput,
+  DbAdmin,
+  AdminModel,
+  AdminMiddleware,
+  Admin,
+  AdminInsight,
+  AdminFilter,
+);
+
+export class AdminService extends serve(dbAdmin, ({ use, service }) => ({
+  authorizer: use<Authorizer>(),
+})) {
+  test() {
+    this.authorizer.test();
+  }
+}
+
+console.log(AdminService);
 
 // import { graphql, buildSchema, GraphQLSchema } from "graphql"; // ✅ 이것만
 

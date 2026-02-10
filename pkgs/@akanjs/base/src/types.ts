@@ -135,14 +135,31 @@ export type MergeAllKeyOfTypes<
 
 export type MergeAllKeyOfObjects<
   T extends { [key: string]: any }[],
-  Key extends string,
+  Key extends string | symbol,
 > = T extends [
-  infer First extends { [key: string]: any },
-  ...infer Rest extends { [key: string]: any }[],
+  infer First extends { [key: string | symbol]: any },
+  ...infer Rest extends { [key: string | symbol]: any }[],
 ]
   ? Rest extends []
     ? First[Key]
     : MergeAllKeyOfObjects<Rest, Key> & First[Key]
+  : unknown;
+
+export type MergeAllDoubleKeyOfObjects<
+  T extends { [key: string]: any }[],
+  Key extends string | symbol,
+  SubKey extends string | symbol,
+> = T extends [
+  infer First extends {
+    [key: string | symbol]: { [key: string | symbol]: any };
+  },
+  ...infer Rest extends {
+    [key: string | symbol]: { [key: string | symbol]: any };
+  }[],
+]
+  ? Rest extends []
+    ? First[Key][SubKey]
+    : MergeAllDoubleKeyOfObjects<Rest, Key, SubKey> & First[Key][SubKey]
   : unknown;
 
 export type Primitive = string | number | boolean | null | undefined; // | symbol | bigint;

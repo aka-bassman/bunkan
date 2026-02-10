@@ -1,0 +1,36 @@
+{
+  "name": "@akanjs/signal",
+  "version": "1.0.7",
+  "sourceType": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://akanjs.com",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akan-team/akanjs.git",
+    "directory": "pkgs/@akanjs/signal"
+  },
+  "main": "./index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@urql/core": "^5.1.0",
+    "immer": "^10.1.1",
+    "next": "16.0.10",
+    "reflect-metadata": "^0.2.2",
+    "socket.io-client": "^4.8.1"
+  },
+  "exports": {
+    ".": {
+      "require": "./cjs/index.js",
+      "import": "./esm/index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "esbuild": {
+    "platform": "neutral"
+  }
+}
