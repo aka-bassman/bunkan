@@ -1,39 +1,20 @@
-import {
-  type GetStateObject,
-  type Cls,
-  PrimitiveScalar,
-  PrimitiveRegistry,
-} from "@akanjs/base";
+import { type GetStateObject, type Cls, PrimitiveScalar, PrimitiveRegistry } from "@akanjs/base";
 
-import type { Cnst, PurifiedModel } from ".";
+import type { ConstantCls, PurifiedModel } from ".";
 import type { DefaultOf, DocumentModel, QueryOf } from "./types";
 
-export type ModelType =
-  | "input"
-  | "object"
-  | "full"
-  | "light"
-  | "insight"
-  | "filter"
-  | "scalar";
+export type ModelType = "input" | "object" | "full" | "light" | "insight" | "filter" | "scalar";
 
 export class ConstantRegistry {
-  static database = new Map<
-    string,
-    ConstantModel<string, any, any, any, any, any>
-  >();
-  static scalar = new Map<
-    string,
-    ScalarConstantModel<any, any, any, any, any>
-  >();
+  static database = new Map<string, ConstantModel<string, any, any, any, any, any>>();
+  static scalar = new Map<string, ScalarConstantModel<any, any, any, any, any>>();
   static modelRefNameMap = new Map<Cls, string>();
   static getRefName<AllowEmpty extends boolean = false>(
     modelRef: Cls,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
   ): AllowEmpty extends true ? string | undefined : string {
     const refName = this.modelRefNameMap.get(modelRef);
-    if (!refName && !allowEmpty)
-      throw new Error(`No ref name for modelRef: ${modelRef}`);
+    if (!refName && !allowEmpty) throw new Error(`No ref name for modelRef: ${modelRef}`);
     return refName as AllowEmpty extends true ? string | undefined : string;
   }
   static isObject(modelRef: Cls<any, { modelType?: ModelType }>) {
@@ -54,60 +35,43 @@ export class ConstantRegistry {
   static isScalar(modelRef: Cls<any, { modelType?: ModelType }>) {
     return modelRef.modelType === "scalar";
   }
-  static setDatabase(
-    refName: string,
-    cnst: ConstantModel<string, any, any, any, any, any>,
-  ) {
+  static setDatabase(refName: string, cnst: ConstantModel<string, any, any, any, any, any>) {
     this.database.set(refName, cnst);
   }
   static getDatabase<AllowEmpty extends boolean = false>(
     refName: string,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
   ): AllowEmpty extends true
-    ?
-        | ConstantModel<string, unknown, unknown, unknown, unknown, unknown>
-        | undefined
+    ? ConstantModel<string, unknown, unknown, unknown, unknown, unknown> | undefined
     : ConstantModel<string, unknown, unknown, unknown, unknown, unknown> {
     const info = this.database.get(refName);
-    if (!info && !allowEmpty)
-      throw new Error(`No database constant model info for ${refName}`);
+    if (!info && !allowEmpty) throw new Error(`No database constant model info for ${refName}`);
     return info as AllowEmpty extends true
-      ?
-          | ConstantModel<string, unknown, unknown, unknown, unknown, unknown>
-          | undefined
+      ? ConstantModel<string, unknown, unknown, unknown, unknown, unknown> | undefined
       : ConstantModel<string, unknown, unknown, unknown, unknown, unknown>;
   }
-  static setScalar(
-    refName: string,
-    cnst: ScalarConstantModel<string, unknown, unknown, unknown, unknown>,
-  ) {
+  static setScalar(refName: string, cnst: ScalarConstantModel<string, unknown, unknown, unknown, unknown>) {
     if (this.scalar.has(refName)) return;
     this.scalar.set(refName, cnst);
   }
   static getScalar<AllowEmpty extends boolean = false>(
     refName: string,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
   ): AllowEmpty extends true
-    ?
-        | ScalarConstantModel<string, unknown, unknown, unknown, unknown>
-        | undefined
+    ? ScalarConstantModel<string, unknown, unknown, unknown, unknown> | undefined
     : ScalarConstantModel<string, unknown, unknown, unknown, unknown> {
     const model = this.scalar.get(refName);
-    if (!model && !allowEmpty)
-      throw new Error(`No scalar constant model for ${refName}`);
+    if (!model && !allowEmpty) throw new Error(`No scalar constant model for ${refName}`);
     return model as AllowEmpty extends true
-      ?
-          | ScalarConstantModel<string, unknown, unknown, unknown, unknown>
-          | undefined
+      ? ScalarConstantModel<string, unknown, unknown, unknown, unknown> | undefined
       : ScalarConstantModel<string, unknown, unknown, unknown, unknown>;
   }
   static getModelRef(
     refName: string,
-    modelType: "input" | "object" | "full" | "light" | "insight" | "scalar",
+    modelType: "input" | "object" | "full" | "light" | "insight" | "scalar"
   ): Cls | typeof PrimitiveScalar {
     if (modelType === "scalar") {
-      if (PrimitiveRegistry.hasName(refName))
-        return PrimitiveRegistry.get(refName) as typeof PrimitiveScalar;
+      if (PrimitiveRegistry.hasName(refName)) return PrimitiveRegistry.get(refName) as typeof PrimitiveScalar;
       else return this.getScalar(refName).model;
     } else return this.getDatabase(refName)[modelType];
   }
@@ -117,7 +81,7 @@ export class ConstantRegistry {
     objectRef: Cls<Obj, { modelType: ModelType }>,
     fullRef: Cls<Full, { modelType: ModelType }>,
     lightRef: Cls<Light, { modelType: ModelType }>,
-    insightRef: Cls<Insight, { modelType: ModelType }>,
+    insightRef: Cls<Insight, { modelType: ModelType }>
   ): ConstantModel<
     T,
     Input,
@@ -165,11 +129,11 @@ export class ConstantRegistry {
       QueryOf<any>
     > = {
       refName,
-      input: inputRef as Cnst<Input>,
-      object: objectRef as Cnst<Obj>,
-      full: fullRef as Cnst<Full>,
-      light: lightRef as Cnst<Light>,
-      insight: insightRef as Cnst<Insight>,
+      input: inputRef as ConstantCls<Input>,
+      object: objectRef as ConstantCls<Obj>,
+      full: fullRef as ConstantCls<Full>,
+      light: lightRef as ConstantCls<Light>,
+      insight: insightRef as ConstantCls<Insight>,
       _CapitalizedT: null as unknown as Capitalize<T>,
       _Default: null as unknown as DefaultOf<Full>,
       _DefaultInput: null as unknown as DefaultOf<Input>,
@@ -186,18 +150,12 @@ export class ConstantRegistry {
   }
   static buildScalar<T extends string, Model>(
     refName: T,
-    Model: Cls<Model>,
-  ): ScalarConstantModel<
-    T,
-    Model,
-    DefaultOf<Model>,
-    DocumentModel<Model>,
-    PurifiedModel<Model>
-  > {
+    Model: Cls<Model>
+  ): ScalarConstantModel<T, Model, DefaultOf<Model>, DocumentModel<Model>, PurifiedModel<Model>> {
     this.modelRefNameMap.set(Model, refName);
     const cnst: ScalarConstantModel<T, any, any, any, any> = {
       refName,
-      model: Model as Cnst<any>,
+      model: Model as ConstantCls<any>,
       _Default: null as unknown as DefaultOf<Model>,
       _Doc: null as unknown as DocumentModel<Model>,
       _PurifiedInput: null as unknown as PurifiedModel<Model>,
@@ -226,11 +184,11 @@ export interface ConstantModel<
   _QueryOfDoc = QueryOf<_Doc>,
 > {
   refName: T;
-  input: Cnst<Input>;
-  object: Cnst<Obj>;
-  full: Cnst<Full>;
-  light: Cnst<Light>;
-  insight: Cnst<Insight>;
+  input: ConstantCls<Input>;
+  object: ConstantCls<Obj>;
+  full: ConstantCls<Full>;
+  light: ConstantCls<Light>;
+  insight: ConstantCls<Insight>;
   _CapitalizedT: _CapitalizedT;
   _Default: _Default;
   _DefaultInput: _DefaultInput;
@@ -251,7 +209,7 @@ export interface ScalarConstantModel<
   _PurifiedInput = PurifiedModel<Model>,
 > {
   refName: T;
-  model: Cnst<Model>;
+  model: ConstantCls<Model>;
   _Default: _Default;
   _Doc: _Doc;
   _PurifiedInput: _PurifiedInput;

@@ -30,28 +30,14 @@ export type BackendEnv = BaseEnv & {
 const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "unknown";
 const repoName = process.env.NEXT_PUBLIC_REPO_NAME ?? "unknown";
 const serveDomain = process.env.NEXT_PUBLIC_SERVE_DOMAIN ?? "unknown";
-if (appName === "unknown")
-  throw new Error("environment variable NEXT_PUBLIC_APP_NAME is required");
-if (repoName === "unknown")
-  throw new Error("environment variable NEXT_PUBLIC_REPO_NAME is required");
-if (serveDomain === "unknown")
-  throw new Error("environment variable NEXT_PUBLIC_SERVE_DOMAIN is required");
-const environment = (process.env.NEXT_PUBLIC_ENV ??
-  "debug") as BaseEnv["environment"];
-const operationType =
-  typeof window !== "undefined"
-    ? "client"
-    : process.env.NEXT_RUNTIME
-      ? "client"
-      : "server";
-const operationMode = (process.env.NEXT_PUBLIC_OPERATION_MODE ??
-  "cloud") as BaseEnv["operationMode"];
+if (appName === "unknown") throw new Error("environment variable NEXT_PUBLIC_APP_NAME is required");
+if (repoName === "unknown") throw new Error("environment variable NEXT_PUBLIC_REPO_NAME is required");
+if (serveDomain === "unknown") throw new Error("environment variable NEXT_PUBLIC_SERVE_DOMAIN is required");
+const environment = (process.env.NEXT_PUBLIC_ENV ?? "debug") as BaseEnv["environment"];
+const operationType = typeof window !== "undefined" ? "client" : process.env.NEXT_RUNTIME ? "client" : "server";
+const operationMode = (process.env.NEXT_PUBLIC_OPERATION_MODE ?? "cloud") as BaseEnv["operationMode"];
 const networkType = (process.env.NEXT_PUBLIC_NETWORK_TYPE ??
-  (environment === "main"
-    ? "mainnet"
-    : environment === "develop"
-      ? "testnet"
-      : "debugnet")) as BaseEnv["networkType"];
+  (environment === "main" ? "mainnet" : environment === "develop" ? "testnet" : "debugnet")) as BaseEnv["networkType"];
 const tunnelUsername = process.env.SSH_TUNNEL_USERNAME ?? "root";
 const tunnelPassword = process.env.SSH_TUNNEL_PASSWORD ?? repoName;
 export const baseEnv: BaseEnv = {
@@ -84,20 +70,12 @@ export type BaseClientEnv = BaseEnv & {
 };
 
 const side = typeof window === "undefined" ? "server" : "client";
-const renderMode = (process.env.RENDER_ENV ??
-  "ssr") as BaseClientEnv["renderMode"];
+const renderMode = (process.env.RENDER_ENV ?? "ssr") as BaseClientEnv["renderMode"];
 const clientHost =
   process.env.NEXT_PUBLIC_CLIENT_HOST ??
-  (operationMode === "local" || side === "server"
-    ? "localhost"
-    : window.location.hostname);
+  (operationMode === "local" || side === "server" ? "localhost" : window.location.hostname);
 const clientPort = parseInt(
-  process.env.NEXT_PUBLIC_CLIENT_PORT ??
-    (operationMode === "local"
-      ? renderMode === "ssr"
-        ? "4200"
-        : "4201"
-      : "443"),
+  process.env.NEXT_PUBLIC_CLIENT_PORT ?? (operationMode === "local" ? (renderMode === "ssr" ? "4200" : "4201") : "443")
 );
 const clientHttpProtocol =
   side === "client"
@@ -121,8 +99,7 @@ const serverHost =
           : "localhost");
 
 const serverPort = parseInt(
-  process.env.NEXT_PUBLIC_SERVER_PORT ??
-    (operationMode === "local" || side === "server" ? "8080" : "443"),
+  process.env.NEXT_PUBLIC_SERVER_PORT ?? (operationMode === "local" || side === "server" ? "8080" : "443")
 );
 const serverHttpProtocol: "http:" | "https:" =
   (process.env.SERVER_HTTP_PROTOCOL as "http:" | "https:" | undefined) ??

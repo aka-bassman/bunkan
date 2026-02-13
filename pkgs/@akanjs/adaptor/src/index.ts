@@ -9,5 +9,5 @@ export * from "./cacheClient";
 export * from "./databaseClient";
 export * from "./decorators";
 export * from "./internalArg";
-export * from "./guards";
 export * from "./__signalContext";
+export * from "./__guard";

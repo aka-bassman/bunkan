@@ -2,10 +2,7 @@ import type { Cls } from ".";
 import { Float, Int } from "./primitiveRegistry";
 
 class EnumPrototype {}
-export type EnumInstance<
-  RefName extends string = string,
-  T = string | number,
-> = Cls<
+export type EnumInstance<RefName extends string = string, T = string | number> = Cls<
   { refName: RefName; value: T },
   {
     refName: RefName;
@@ -14,33 +11,20 @@ export type EnumInstance<
     valueMap: Map<T, number>;
     has: (value: T) => boolean;
     indexOf: (value: T) => number;
-    find: (
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ) => T;
-    findIndex: (
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ) => number;
-    filter: (
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ) => T[];
-    map: <R>(
-      callback: (value: T, index: number, array: readonly T[]) => R,
-    ) => R[];
-    forEach: (
-      callback: (value: T, index: number, array: readonly T[]) => void,
-    ) => void;
+    find: (callback: (value: T, index: number, array: readonly T[]) => boolean) => T;
+    findIndex: (callback: (value: T, index: number, array: readonly T[]) => boolean) => number;
+    filter: (callback: (value: T, index: number, array: readonly T[]) => boolean) => T[];
+    map: <R>(callback: (value: T, index: number, array: readonly T[]) => R) => R[];
+    forEach: (callback: (value: T, index: number, array: readonly T[]) => void) => void;
   }
 >;
 
-export const isEnum = (enumRef: Cls) =>
-  Object.getPrototypeOf(Object.getPrototypeOf(enumRef) ?? {}) === EnumPrototype;
+export const isEnum = (enumRef: Cls) => Object.getPrototypeOf(Object.getPrototypeOf(enumRef) ?? {}) === EnumPrototype;
 export const enumOf = <RefName extends string, T = string | number>(
   refName: RefName,
-  values: readonly T[],
+  values: readonly T[]
 ): EnumInstance<RefName, T> => {
-  const valueMap = new Map(
-    values.map((value, idx) => [value, idx] as [T, number]),
-  );
+  const valueMap = new Map(values.map((value, idx) => [value, idx] as [T, number]));
   const firstValue = values.at(0) as string | number | undefined;
   if (firstValue === undefined) throw new Error("Enum values are empty");
   const type =
@@ -61,33 +45,23 @@ export const enumOf = <RefName extends string, T = string | number>(
       if (idx === undefined) throw new Error(`Value ${value} is not in enum`);
       return idx;
     }
-    static find(
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ): T {
+    static find(callback: (value: T, index: number, array: readonly T[]) => boolean): T {
       const val = this.values.find(callback);
       if (val === undefined) throw new Error(`Value not found in enum`);
       return val;
     }
-    static findIndex(
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ): number {
+    static findIndex(callback: (value: T, index: number, array: readonly T[]) => boolean): number {
       const idx = this.values.findIndex(callback);
       if (idx === -1) throw new Error(`Value not found in enum`);
       return idx;
     }
-    static filter(
-      callback: (value: T, index: number, array: readonly T[]) => boolean,
-    ): T[] {
+    static filter(callback: (value: T, index: number, array: readonly T[]) => boolean): T[] {
       return this.values.filter(callback);
     }
-    static map<R>(
-      callback: (value: T, index: number, array: readonly T[]) => R,
-    ): R[] {
+    static map<R>(callback: (value: T, index: number, array: readonly T[]) => R): R[] {
       return this.values.map(callback);
     }
-    static forEach(
-      callback: (value: T, index: number, array: readonly T[]) => void,
-    ): void {
+    static forEach(callback: (value: T, index: number, array: readonly T[]) => void): void {
       this.values.forEach(callback);
     }
     static readonly refName = refName;
@@ -114,12 +88,7 @@ export class DataList<Light extends { id: string }> {
   }
   set(value: Light) {
     const idx = this.#idMap.get(value.id);
-    if (idx !== undefined)
-      this.values = [
-        ...this.values.slice(0, idx),
-        value,
-        ...this.values.slice(idx + 1),
-      ];
+    if (idx !== undefined) this.values = [...this.values.slice(0, idx), value, ...this.values.slice(idx + 1)];
     else {
       this.#idMap.set(value.id, this.length);
       this.values = [...this.values, value];
@@ -132,9 +101,7 @@ export class DataList<Light extends { id: string }> {
     if (idx === undefined) return this;
     this.#idMap.delete(id);
     this.values.splice(idx, 1);
-    this.values
-      .slice(idx)
-      .forEach((value, i) => this.#idMap.set(value.id, i + idx));
+    this.values.slice(idx).forEach((value, i) => this.#idMap.set(value.id, i + idx));
     this.length--;
     return this;
   }
@@ -177,9 +144,7 @@ export class DataList<Light extends { id: string }> {
   map<T>(fn: (value: Light, idx: number) => T) {
     return this.values.map(fn);
   }
-  flatMap<T>(
-    fn: (value: Light, idx: number, array: Light[]) => T | readonly T[],
-  ) {
+  flatMap<T>(fn: (value: Light, idx: number, array: Light[]) => T | readonly T[]) {
     return this.values.flatMap(fn);
   }
   sort(fn: (a: Light, b: Light) => number) {

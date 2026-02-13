@@ -85,11 +85,8 @@ export class SignalCache extends intercept("signalCache", ({ use }) => ({
       const { data } = JSON.parse(cached) as CacheResult<T>;
       return data;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      this.logger.error(
-        `Error retrieving cache for key ${key}: ${errorMessage}`,
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Error retrieving cache for key ${key}: ${errorMessage}`);
       return null;
     }
   }
@@ -99,8 +96,7 @@ export class SignalCache extends intercept("signalCache", ({ use }) => ({
       const cacheData: CacheResult<unknown> = { data, timestamp: Date.now() };
       await this.redis.set(key, JSON.stringify(cacheData), { PX: ttlMs });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Error setting cache for key ${key}: ${errorMessage}`);
     }
   }
@@ -128,9 +124,7 @@ export class SignalLogging extends intercept("signalLogging", ({ use }) => ({
     this.logger.debug(`Before ${reqType}-${reqName} / ${ip} / ${before}`);
     return (res: Response) => {
       const after = Date.now();
-      this.logger.debug(
-        `After  ${reqType}-${reqName} / ${ip} / ${after} (${after - before}ms)`,
-      );
+      this.logger.debug(`After  ${reqType}-${reqName} / ${ip} / ${after} (${after - before}ms)`);
       return res;
     };
   }

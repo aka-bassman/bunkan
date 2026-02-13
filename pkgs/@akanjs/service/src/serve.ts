@@ -7,11 +7,7 @@
 
 import type { Cls } from "@akanjs/base";
 import { lowerlize, capitalize, Logger } from "@akanjs/common";
-import type {
-  BaseMiddleware,
-  Database,
-  FilterInstance,
-} from "@akanjs/document";
+import type { BaseMiddleware, Database, FilterInstance } from "@akanjs/document";
 
 import {
   type InjectBuilder,
@@ -74,11 +70,7 @@ export function serve<
   db: Database<T, Input, Doc, Model, Middleware, Obj, Insight, Filter>,
   injectBuilder: Injection,
   ...extendSrvs: LibSrvs
-): ServiceCls<
-  T,
-  DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>,
-  ReturnType<Injection>
->;
+): ServiceCls<T, DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>, ReturnType<Injection>>;
 export function serve<
   T extends string,
   Input,
@@ -94,11 +86,7 @@ export function serve<
   db: Database<T, Input, Doc, Model, Middleware, Obj, Insight, Filter>,
   injectBuilder: Injection,
   ...extendSrvs: LibSrvs
-): ServiceCls<
-  T,
-  DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>,
-  ReturnType<Injection>
->;
+): ServiceCls<T, DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>, ReturnType<Injection>>;
 
 export function serve<
   T extends string,
@@ -116,43 +104,25 @@ export function serve<
   option: ServiceOptions,
   injectBuilder: Injection,
   ...extendSrvs: LibSrvs
-): ServiceCls<
-  T,
-  DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>,
-  ReturnType<Injection>
->;
+): ServiceCls<T, DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>, ReturnType<Injection>>;
 
 export function serve(
   refNameOrDb: string | Database<any, any, any, any, any, any, any, any>,
   optionOrInjectBuilder: ServiceOptions | InjectBuilder,
-  injectBuilderOrExtendSrv?:
-    | InjectBuilder<Exclude<InjectType, "database">>
-    | Cls,
+  injectBuilderOrExtendSrv?: InjectBuilder<Exclude<InjectType, "database">> | Cls,
   ...extendSrvs: Cls[]
 ) {
-  const refName =
-    typeof refNameOrDb === "string"
-      ? lowerlize(refNameOrDb)
-      : refNameOrDb.refName;
-  const option =
-    typeof optionOrInjectBuilder === "object"
-      ? optionOrInjectBuilder
-      : { enabled: true };
+  const refName = typeof refNameOrDb === "string" ? lowerlize(refNameOrDb) : refNameOrDb.refName;
+  const option = typeof optionOrInjectBuilder === "object" ? optionOrInjectBuilder : { enabled: true };
   const injectBuilder =
-    typeof optionOrInjectBuilder === "function"
-      ? optionOrInjectBuilder
-      : (injectBuilderOrExtendSrv as InjectBuilder);
+    typeof optionOrInjectBuilder === "function" ? optionOrInjectBuilder : (injectBuilderOrExtendSrv as InjectBuilder);
   const extSrvs = [
-    ...(typeof optionOrInjectBuilder === "function" && injectBuilderOrExtendSrv
-      ? [injectBuilderOrExtendSrv]
-      : []),
+    ...(typeof optionOrInjectBuilder === "function" && injectBuilderOrExtendSrv ? [injectBuilderOrExtendSrv] : []),
     ...extendSrvs,
   ] as Cls[];
   const isEnabled =
     option.enabled ??
-    (!option.serverMode ||
-      process.env.SERVER_MODE === option.serverMode ||
-      process.env.SERVER_MODE === "all");
+    (!option.serverMode || process.env.SERVER_MODE === option.serverMode || process.env.SERVER_MODE === "all");
   const serviceType = typeof refNameOrDb === "string" ? "plain" : "database";
   const injectInfoMap = injectBuilder(injectionBuilder);
   if (serviceType === "database")

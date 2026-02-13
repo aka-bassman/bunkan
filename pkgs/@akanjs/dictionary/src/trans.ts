@@ -4,14 +4,8 @@ import { pathGet } from "@akanjs/common";
 
 import type { DictModule } from "./locale";
 
-type TranslationSingle =
-  | readonly [string, string]
-  | readonly [string, string, string, string];
-type TranslationWithParam = readonly [
-  string,
-  string,
-  { [key: string]: string | number },
-];
+type TranslationSingle = readonly [string, string] | readonly [string, string, string, string];
+type TranslationWithParam = readonly [string, string, { [key: string]: string | number }];
 export type Translation = TranslationSingle | TranslationWithParam;
 
 export type Translate<Checker> = {
@@ -25,9 +19,7 @@ export type TransMessage<Locale extends Record<string, any>> = {
 export const makeDictionary = <Dicts extends { [key: string]: any }[]>(
   ...dicts: Dicts
 ): Prettify<ObjectAssign<Dicts>> => {
-  return Object.assign(...(dicts as unknown as [object, object])) as Prettify<
-    ObjectAssign<Dicts>
-  >;
+  return Object.assign(...(dicts as unknown as [object, object])) as Prettify<ObjectAssign<Dicts>>;
 };
 
 const languages = ["en", "ko", "zhChs", "zhCht"] as const;
@@ -56,24 +48,18 @@ export const msg = {
 const rootDictionary = {} as { [key: string]: object };
 export const makeTrans = <
   GlobalTransMap extends Record<string, DictModule<string, string>>,
-  _DictKey extends string =
-    GlobalTransMap[keyof GlobalTransMap]["__Dict_Key__"],
-  _ErrorKey extends string =
-    GlobalTransMap[keyof GlobalTransMap]["__Error_Key__"],
+  _DictKey extends string = GlobalTransMap[keyof GlobalTransMap]["__Dict_Key__"],
+  _ErrorKey extends string = GlobalTransMap[keyof GlobalTransMap]["__Error_Key__"],
 >(
   transMap: GlobalTransMap,
-  { build = false }: { build?: boolean } = {},
+  { build = false }: { build?: boolean } = {}
 ): {
   revert: (key: _ErrorKey, data?: any) => never;
   Revert: {
     new (key: _ErrorKey, data?: any): Error;
     prototype: Error;
   };
-  translate: (
-    lang: Language,
-    key: _DictKey,
-    data?: { [key: string]: any },
-  ) => string;
+  translate: (lang: Language, key: _DictKey, data?: { [key: string]: any }) => string;
   msg: {
     info: (key: _DictKey, option?: TransMessageOption) => void;
     success: (key: _DictKey, option?: TransMessageOption) => void;
@@ -97,11 +83,7 @@ export const makeTrans = <
       super(key as string);
     }
   }
-  const translate = (
-    lang: Language,
-    key: _DictKey,
-    data?: { [key: string]: any },
-  ) => {
+  const translate = (lang: Language, key: _DictKey, data?: { [key: string]: any }) => {
     const [modelName, msgKey] = key.split(".");
     const langDict = rootDictionary[lang] ?? {};
     const model = langDict[modelName] ?? {};

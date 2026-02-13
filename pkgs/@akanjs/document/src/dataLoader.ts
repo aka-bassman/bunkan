@@ -14,11 +14,7 @@ export const ObjectId = Schema.Types.ObjectId;
 export const Mixed = Schema.Types.Mixed;
 export { DataLoader };
 
-export const createLoader = <Key, Value>(
-  model: Model<any>,
-  fieldName = "_id",
-  defaultQuery: QueryOf<unknown> = {},
-) => {
+export const createLoader = <Key, Value>(model: Model<any>, fieldName = "_id", defaultQuery: QueryOf<unknown> = {}) => {
   return new DataLoader<Key, Value>(
     (fields) => {
       const query: QueryOf<unknown> = { ...defaultQuery };
@@ -29,21 +25,15 @@ export const createLoader = <Key, Value>(
       });
       return data as unknown as Promise<Value[]>;
     },
-    { name: "dataloader", cache: false },
+    { name: "dataloader", cache: false }
   );
 };
-export const createArrayLoader = <K, V>(
-  model: Model<any>,
-  fieldName = "_id",
-  defaultQuery: QueryOf<unknown> = {},
-) => {
+export const createArrayLoader = <K, V>(model: Model<any>, fieldName = "_id", defaultQuery: QueryOf<unknown> = {}) => {
   return new DataLoader<K, V>((fields) => {
     const query: QueryOf<unknown> = { ...defaultQuery };
     query[fieldName] = { $in: fields };
     const data = model.find(query).then((list) => {
-      return fields.map((field) =>
-        list.filter((item) => field === item[fieldName]),
-      );
+      return fields.map((field) => list.filter((item) => field === item[fieldName]));
     });
     return data as unknown as Promise<V[]>;
   });
@@ -51,7 +41,7 @@ export const createArrayLoader = <K, V>(
 export const createArrayElementLoader = <K, V>(
   model: Model<any>,
   fieldName = "_id",
-  defaultQuery: QueryOf<unknown> = {},
+  defaultQuery: QueryOf<unknown> = {}
 ) => {
   return new DataLoader<K, V>(
     (fields: any) => {
@@ -62,38 +52,35 @@ export const createArrayElementLoader = <K, V>(
           datum[fieldName].map((datField: any) => ({
             ...datum.toObject(),
             key: datField,
-          })),
+          }))
         );
         const listByKey = groupBy(flat, (dat) => dat.key);
         return fields.map((id: any) => get(listByKey, id, null));
       });
       return data;
     },
-    { name: "dataloader", cache: false },
+    { name: "dataloader", cache: false }
   );
 };
 
 export const createQueryLoader = <Key, Value>(
   model: Model<any>,
   queryKeys: string[],
-  defaultQuery: QueryOf<unknown> = {},
+  defaultQuery: QueryOf<unknown> = {}
 ) => {
   return new DataLoader<Key, Value, Key>(
     (queries: any): any => {
       const query: QueryOf<unknown> = {
         $and: [{ $or: queries }, defaultQuery],
       };
-      const getQueryKey = (query: QueryOf<unknown>) =>
-        queryKeys.map((key) => query[key].toString()).join("");
+      const getQueryKey = (query: QueryOf<unknown>) => queryKeys.map((key) => query[key].toString()).join("");
       const data = model.find(query).then((list: Document[]) => {
         const listByKey = keyBy(list, getQueryKey);
-        return queries.map((query: QueryOf<unknown>) =>
-          get(listByKey, getQueryKey(query), null),
-        );
+        return queries.map((query: QueryOf<unknown>) => get(listByKey, getQueryKey(query), null));
       });
       return data;
     },
-    { name: "dataloader", cache: false },
+    { name: "dataloader", cache: false }
   );
 };
 

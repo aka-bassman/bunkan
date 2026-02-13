@@ -1,12 +1,7 @@
-import {
+import { type MergedValues, type PromiseOrObject, type Cls, type UnCls } from "@akanjs/base";
+import type {
   BaseInsight,
   BaseObject,
-  type MergedValues,
-  type PromiseOrObject,
-  type Cls,
-  type UnCls,
-} from "@akanjs/base";
-import type {
   ConstantFieldTypeInput,
   DocumentModel,
   FieldToValue,
@@ -17,14 +12,15 @@ import type {
 } from "@akanjs/constant";
 import type { InternalArgCls } from "@akanjs/adaptor";
 
-import type { ApiArgProps } from "./apiInfo";
-import type { ArgType, SignalOption } from ".";
+import type { EndpointArgProps } from "./endpointInfo";
+import type { ArgType, SignalOption } from "./types";
+import type { ServiceModule } from "@akanjs/service";
 
 export class SliceInfo<
   T extends string,
-  Full extends BaseObject,
-  Light extends BaseObject,
-  Insight extends BaseInsight,
+  Full,
+  Light,
+  Insight,
   Srvs extends { [key: string]: any } = { [key: string]: any },
   ArgNames extends string[] = [],
   Args extends any[] = [],
@@ -40,26 +36,16 @@ export class SliceInfo<
     type: ArgType;
     name: string;
     argRef: ConstantFieldTypeInput;
-    option?: ApiArgProps<boolean>;
+    option?: EndpointArgProps<boolean>;
   }[] = [];
   readonly internalArgs: {
     type: InternalArgCls;
-    option?: ApiArgProps<boolean>;
+    option?: EndpointArgProps<boolean>;
   }[] = [];
   readonly signalOption: SignalOption;
-  execFn:
-    | ((
-        ...args: [...ServerArgs, ...InternalArgs]
-      ) => QueryOf<DocumentModel<Full>>)
-    | null = null;
+  execFn: ((...args: [...ServerArgs, ...InternalArgs]) => QueryOf<DocumentModel<Full>>) | null = null;
 
-  constructor(
-    refName: T,
-    full: Cls<Full>,
-    light: Cls<Light>,
-    insight: Cls<Insight>,
-    signalOption: SignalOption = {},
-  ) {
+  constructor(refName: T, full: Cls<Full>, light: Cls<Light>, insight: Cls<Insight>, signalOption: SignalOption = {}) {
     this.refName = refName;
     this.full = full;
     this.light = light;
@@ -71,12 +57,11 @@ export class SliceInfo<
     Arg extends ParamFieldType,
     _ClientArg = FieldToValue<Arg>,
     _ServerArg = DocumentModel<_ClientArg>,
-  >(name: ArgName, argRef: Arg, option?: Omit<ApiArgProps, "nullable">) {
+  >(name: ArgName, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
-    else if (this.args.at(-1)?.option?.nullable)
-      throw new Error("Last argument is nullable");
+    else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "Param", name, argRef, option });
+    this.args.push({ type: "param", name, argRef, option });
     return this as unknown as SliceInfo<
       T,
       Full,
@@ -96,12 +81,11 @@ export class SliceInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: ArgName, argRef: Arg, option?: ApiArgProps) {
+  >(name: ArgName, argRef: Arg, option?: EndpointArgProps) {
     if (this.execFn) throw new Error("Query function is already set");
-    else if (this.args.at(-1)?.option?.nullable)
-      throw new Error("Last argument is nullable");
+    else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "Body", name, argRef, option });
+    this.args.push({ type: "body", name, argRef, option });
     return this as unknown as SliceInfo<
       T,
       Full,
@@ -121,11 +105,11 @@ export class SliceInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: ArgName, argRef: Arg, option?: Omit<ApiArgProps, "nullable">) {
+  >(name: ArgName, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     this.argNames.push(name);
     this.args.push({
-      type: "Query",
+      type: "query",
       name,
       argRef,
       option: { ...option, nullable: true },
@@ -144,7 +128,7 @@ export class SliceInfo<
   }
   with<ArgType, Optional extends boolean = false>(
     argType: InternalArgCls<ArgType>,
-    option?: ApiArgProps<Optional>,
+    option?: EndpointArgProps<Optional>
   ) {
     if (this.execFn) throw new Error("Query function is already set");
     this.internalArgs.push({ type: argType, option });
@@ -163,12 +147,10 @@ export class SliceInfo<
   exec(
     query: (
       this: {
-        [K in keyof Srvs as K extends string
-          ? Uncapitalize<K>
-          : never]: Srvs[K];
+        [K in keyof Srvs as K extends string ? Uncapitalize<K> : never]: Srvs[K];
       },
       ...args: [...ServerArgs, ...InternalArgs]
-    ) => PromiseOrObject<QueryOf<DocumentModel<Full>>>,
+    ) => PromiseOrObject<QueryOf<DocumentModel<Full>>>
   ) {
     if (this.execFn) throw new Error("Query function is already set");
     this.execFn = query;
@@ -348,81 +330,35 @@ export class SliceInfo<
   // }
 }
 
-type SliceToSignal<
-  T extends string,
-  Full extends BaseObject,
-  Insight extends BaseInsight,
-  Args extends any[],
-  Suffix extends string,
-  _CapitalizedSuffix extends string = Capitalize<Suffix>,
-> = {
-  [K in `${T}List${_CapitalizedSuffix}`]: (
-    ...args: [
-      ...Args,
-      skip: number | null,
-      limit: number | null,
-      sort: string | null,
-    ]
-  ) => Promise<Full[]>;
-} & {
-  [K in `${T}Insight${_CapitalizedSuffix}`]: (
-    ...args: Args
-  ) => Promise<Insight>;
-};
-
-export type BuildSliceSignal<SliceInfoMap> = MergedValues<{
-  [K in keyof SliceInfoMap]: SliceInfoMap[K] extends SliceInfo<
-    infer T,
-    infer Full,
-    any,
-    infer Insight,
-    any,
-    any,
-    infer Args,
-    any,
-    any
-  >
-    ? SliceToSignal<T, Full, Insight, Args, K & string>
-    : never;
-}>;
-
-export const sliceInit =
+export const buildSlice =
   <
     T extends string,
     Full extends BaseObject,
     Light extends BaseObject,
     Insight extends BaseInsight,
-    Srvs extends { [key: string]: any },
+    SrvModule extends ServiceModule,
   >(
     refName: T,
     full: Cls<Full>,
     light: Cls<Light>,
-    insight: Cls<Insight>,
+    insight: Cls<Insight>
   ) =>
   (signalOption?: SignalOption) =>
-    new SliceInfo<T, Full, Light, Insight, Srvs, [], [], [], []>(
+    new SliceInfo<T, Full, Light, Insight, SrvModule["srvMap"], [], [], [], []>(
       refName,
       full,
       light,
       insight,
-      signalOption,
+      signalOption
     );
 
-export type SliceApiBuilder<
-  T extends string,
-  Full extends BaseObject,
-  Light extends BaseObject,
-  Insight extends BaseInsight,
-  Srvs extends { [key: string]: any } = { [key: string]: any },
-  _ThisSrvs extends { [key: string]: any } = {
-    [K in keyof Srvs as K extends string ? Uncapitalize<K> : never]: UnCls<
-      Srvs[K]
-    >;
-  },
+export type SliceBuilder<
+  SrvModule extends ServiceModule,
+  _Full = NonNullable<SrvModule["cnst"]>["full"],
+  _Light = NonNullable<SrvModule["cnst"]>["light"],
+  _Insight = NonNullable<SrvModule["cnst"]>["insight"],
 > = (
-  init: (
-    signalOption?: SignalOption,
-  ) => SliceInfo<T, Full, Light, Insight, _ThisSrvs>,
+  init: (signalOption?: SignalOption) => SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>
 ) => {
-  [key: string]: SliceInfo<T, any, any, any, any, any, any, any, any>;
+  [key: string]: SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"], any, any, any, any>;
 };

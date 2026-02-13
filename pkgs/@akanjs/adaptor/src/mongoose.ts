@@ -14,22 +14,17 @@ export const initMongoDB = ({
 }) => {
   const mongoDBLogger = new Logger("MongoDB");
   if (logging)
-    mongoose.set(
-      "debug",
-      function (collection: string, method: string, ...methodArgs: object[]) {
-        mongoDBLogger.verbose(
-          `${collection}.${method}(${methodArgs
-            .slice(0, -1)
-            .map((arg) => JSON.stringify(arg))
-            .join(", ")})`,
-        );
-      },
-    );
+    mongoose.set("debug", function (collection: string, method: string, ...methodArgs: object[]) {
+      mongoDBLogger.verbose(
+        `${collection}.${method}(${methodArgs
+          .slice(0, -1)
+          .map((arg) => JSON.stringify(arg))
+          .join(", ")})`
+      );
+    });
 
   // 1. Query duration logging
-  const originalExec = mongoose.Query.prototype.exec as (
-    ...args: any[]
-  ) => Promise<object>;
+  const originalExec = mongoose.Query.prototype.exec as (...args: any[]) => Promise<object>;
   const getQueryInfo = (queryAgent: mongoose.Query<any, any>) => {
     const model = queryAgent.model;
     const collectionName = model.collection.collectionName;
@@ -43,14 +38,12 @@ export const initMongoDB = ({
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return originalExec.apply(this, args).then((result: object) => {
       const duration = Date.now() - start;
-      const { dbName, collectionName, query, queryOptions } = getQueryInfo(
-        this as mongoose.Query<any, any>,
-      );
+      const { dbName, collectionName, query, queryOptions } = getQueryInfo(this as mongoose.Query<any, any>);
       if (logging)
         mongoDBLogger.verbose(
           `Queried ${dbName}.${collectionName}.query(${JSON.stringify(query)}, ${JSON.stringify(
-            queryOptions,
-          )}) - ${duration}ms`,
+            queryOptions
+          )}) - ${duration}ms`
         );
       return result;
     }) as unknown as Promise<any>;
@@ -67,20 +60,18 @@ export const initMongoDB = ({
     aggregate: function (this: mongoose.Model<any>, ...args: any[]) {
       const startTime = Date.now();
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-      return originalAggregate
-        .apply(this, [args] as [mongoose.PipelineStage[]])
-        .then((result: object) => {
-          const duration = Date.now() - startTime;
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          const { dbName, collectionName } = getAggregateInfo(this);
-          if (logging)
-            mongoDBLogger.verbose(
-              `Aggregated ${dbName}.${collectionName}.aggregate(${args
-                .map((arg) => JSON.stringify(arg))
-                .join(", ")}) - ${duration}ms`,
-            );
-          return result;
-        });
+      return originalAggregate.apply(this, [args] as [mongoose.PipelineStage[]]).then((result: object) => {
+        const duration = Date.now() - startTime;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        const { dbName, collectionName } = getAggregateInfo(this);
+        if (logging)
+          mongoDBLogger.verbose(
+            `Aggregated ${dbName}.${collectionName}.aggregate(${args
+              .map((arg) => JSON.stringify(arg))
+              .join(", ")}) - ${duration}ms`
+          );
+        return result;
+      });
     },
   });
 

@@ -16,18 +16,11 @@ export class SearchClient extends adapt("searchClient", ({ use }) => ({
       limit?: number;
       sort?: string;
       searchString?: string;
-    },
+    }
   ) {
-    const {
-      skip = 0,
-      limit = DEFAULT_PAGE_SIZE,
-      sort = "",
-      searchString,
-    } = option;
+    const { skip = 0, limit = DEFAULT_PAGE_SIZE, sort = "", searchString } = option;
     if (!searchString) {
-      const { results, total } = await this.meili
-        .index(indexName)
-        .getDocuments({ offset: skip, limit });
+      const { results, total } = await this.meili.index(indexName).getDocuments({ offset: skip, limit });
       return { docs: results, skip, limit, sort, total };
     }
     const { hits, estimatedTotalHits } = await this.meili

@@ -9,28 +9,15 @@
 import type { Cls, Dayjs, MergedValues, PromiseOrObject } from "@akanjs/base";
 import { dayjs } from "@akanjs/base";
 import { capitalize, Logger, lowerlize } from "@akanjs/common";
-import {
-  DEFAULT_PAGE_SIZE,
-  type DocumentModel,
-  type QueryOf,
-} from "@akanjs/constant";
+import { DEFAULT_PAGE_SIZE, FIELD_META, type DocumentModel, type QueryOf } from "@akanjs/constant";
 // import { Transaction } from "@akanjs/nest";
 import type DataLoader from "dataloader";
 import type { Filter, Index, MeiliSearch } from "meilisearch";
 import type { HydratedDocument, Model as MongooseModel } from "mongoose";
 import type { RedisClientType, SetOptions } from "redis";
 
-import {
-  createArrayLoader,
-  createLoader,
-  createQueryLoader,
-} from "./dataLoader";
-import type {
-  BaseMiddleware,
-  CRUDEventType,
-  Mdl,
-  SaveEventType,
-} from "./dbDecorators";
+import { createArrayLoader, createLoader, createQueryLoader } from "./dataLoader";
+import type { BaseMiddleware, CRUDEventType, Mdl, SaveEventType } from "./dbDecorators";
 import type { Database } from "./databaseRegistry";
 import {
   getFilterSortByKey,
@@ -42,12 +29,7 @@ import {
   FILTER_META_KEY,
 } from "./filterMeta";
 import { convertAggregateMatch } from "./schema";
-import type {
-  ConstantFilterMeta,
-  DataInputOf,
-  FindQueryOption,
-  ListQueryOption,
-} from "./types";
+import type { ConstantFilterMeta, DataInputOf, FindQueryOption, ListQueryOption } from "./types";
 import { getLoaderInfos } from "./loaderInfo";
 
 export interface RedisSetOptions {
@@ -58,23 +40,15 @@ class CacheDatabase<T = any> {
   private logger: Logger;
   constructor(
     private readonly refName: string,
-    private readonly redis: RedisClientType,
+    private readonly redis: RedisClientType
   ) {
     this.logger = new Logger(`${refName}Cache`);
   }
-  async set(
-    topic: string,
-    key: string,
-    value: string | number | Buffer,
-    option: RedisSetOptions = {},
-  ) {
+  async set(topic: string, key: string, value: string | number | Buffer, option: RedisSetOptions = {}) {
     const setOption: SetOptions = { PXAT: option.expireAt?.toDate().getTime() };
     await this.redis.set(`${this.refName}:${topic}:${key}`, value, setOption);
   }
-  async get<T extends string | number | Buffer>(
-    topic: string,
-    key: string,
-  ): Promise<T | undefined> {
+  async get<T extends string | number | Buffer>(topic: string, key: string): Promise<T | undefined> {
     const value = await this.redis.get(`${this.refName}:${topic}:${key}`);
     return value as T | undefined;
   }
@@ -87,7 +61,7 @@ class SearchDatabase<T = any> {
   private index: Index;
   constructor(
     readonly refName: string,
-    readonly meili: MeiliSearch,
+    readonly meili: MeiliSearch
   ) {
     this.logger = new Logger(`${refName}Search`);
     this.index = meili.index(lowerlize(refName));
@@ -99,7 +73,7 @@ class SearchDatabase<T = any> {
       skip?: number | null;
       limit?: number | null;
       sort?: string[] | null;
-    } = {},
+    } = {}
   ): Promise<{ ids: string[]; total: number }> {
     const { skip = 0, limit = DEFAULT_PAGE_SIZE, sort } = option;
     if (!searchText) {
@@ -125,7 +99,7 @@ class SearchDatabase<T = any> {
       skip?: number | null;
       limit?: number | null;
       sort?: string | null;
-    } = {},
+    } = {}
   ): Promise<number> {
     const { skip = 0, limit = DEFAULT_PAGE_SIZE, sort = "" } = option;
     if (!searchText) {
@@ -160,9 +134,7 @@ type QueryMethodOfKey<
 } & {
   [K in `find${CapitalizedK}`]: (...args: _FindArgs) => Promise<Doc | null>;
 } & {
-  [K in `findId${CapitalizedK}`]: (
-    ...args: _FindArgs
-  ) => Promise<string | null>;
+  [K in `findId${CapitalizedK}`]: (...args: _FindArgs) => Promise<string | null>;
 } & {
   [K in `pick${CapitalizedK}`]: (...args: _FindArgs) => Promise<Doc>;
 } & {
@@ -226,41 +198,20 @@ type DatabaseModelWithQuerySort<
   __update: (id: string, data: Partial<Doc>) => Promise<Doc>;
   __remove: (id: string) => Promise<Doc>;
   __list(query: _QueryOfDoc, queryOption?: _ListQueryOption): Promise<Doc[]>;
-  __listIds(
-    query: _QueryOfDoc,
-    queryOption?: _ListQueryOption,
-  ): Promise<string[]>;
-  __find(
-    query: _QueryOfDoc,
-    queryOption?: _FindQueryOption,
-  ): Promise<Doc | null>;
-  __findId(
-    query: _QueryOfDoc,
-    queryOption?: _FindQueryOption,
-  ): Promise<string | null>;
+  __listIds(query: _QueryOfDoc, queryOption?: _ListQueryOption): Promise<string[]>;
+  __find(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<Doc | null>;
+  __findId(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<string | null>;
   __pick(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<Doc>;
   __pickId(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<string>;
   __exists(query: _QueryOfDoc): Promise<string | null>;
   __count(query: _QueryOfDoc): Promise<number>;
   __insight(query: _QueryOfDoc): Promise<Insight>;
-  __search(
-    searchText: string,
-    queryOption?: _ListQueryOption,
-  ): Promise<{ docs: Doc[]; count: number }>;
-  __searchDocs(
-    searchText: string,
-    queryOption?: _ListQueryOption,
-  ): Promise<Doc[]>;
+  __search(searchText: string, queryOption?: _ListQueryOption): Promise<{ docs: Doc[]; count: number }>;
+  __searchDocs(searchText: string, queryOption?: _ListQueryOption): Promise<Doc[]>;
   __searchCount(searchText: string): Promise<number>;
   clone(data: _DataInput & { id: string }): Promise<Doc>;
-  listenPre: (
-    type: SaveEventType,
-    listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-  ) => () => void;
-  listenPost: (
-    type: SaveEventType,
-    listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-  ) => () => void;
+  listenPre: (type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) => () => void;
+  listenPost: (type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) => () => void;
 } & {
   [key in _CapitalizedT]: Mdl<Doc, Obj>;
 } & {
@@ -278,34 +229,19 @@ type DatabaseModelWithQuerySort<
 } & {
   [K in `create${_CapitalizedT}`]: (data: _DataInput) => Promise<Doc>;
 } & {
-  [K in `update${_CapitalizedT}`]: (
-    id: string,
-    data: _DataInput,
-  ) => Promise<Doc>;
+  [K in `update${_CapitalizedT}`]: (id: string, data: _DataInput) => Promise<Doc>;
 } & {
   [K in `remove${_CapitalizedT}`]: (id: string) => Promise<Doc>;
 } & {
   [K in `search${_CapitalizedT}`]: (
     searchText: string,
-    queryOption?: _ListQueryOption,
+    queryOption?: _ListQueryOption
   ) => Promise<{ docs: Doc[]; count: number }>;
 } & {
-  [K in `searchDocs${_CapitalizedT}`]: (
-    searchText: string,
-    queryOption?: _ListQueryOption,
-  ) => Promise<Doc[]>;
+  [K in `searchDocs${_CapitalizedT}`]: (searchText: string, queryOption?: _ListQueryOption) => Promise<Doc[]>;
 } & {
   [K in `searchCount${_CapitalizedT}`]: (searchText: string) => Promise<number>;
-} & QueryMethodPart<
-    Query,
-    Sort,
-    Obj,
-    Doc,
-    Insight,
-    _FindQueryOption,
-    _ListQueryOption,
-    _QueryOfDoc
-  >;
+} & QueryMethodPart<Query, Sort, Obj, Doc, Insight, _FindQueryOption, _ListQueryOption, _QueryOfDoc>;
 
 export type DatabaseModel<
   T extends string,
@@ -337,10 +273,7 @@ export type DatabaseModel<
 >;
 
 export class DatabaseModelRegistry {
-  static #modelMap = new Map<
-    string,
-    Cls<DatabaseModel<string, any, any, any, any, any>>
-  >();
+  static #modelMap = new Map<string, Cls<DatabaseModel<string, any, any, any, any, any>>>();
   static build<
     T extends string,
     Input,
@@ -354,25 +287,16 @@ export class DatabaseModelRegistry {
     database: Database<T, Input, Doc, Model, Middleware, Insight, Obj, Filter>,
     model: Mdl<any, any>,
     redis: RedisClientType,
-    meili: MeiliSearch,
+    meili: MeiliSearch
   ): DatabaseModel<T, Input, Doc, Model, Insight, Filter> {
     type Sort = ExtractSort<Filter>;
-    const [modelName, className]: [string, string] = [
-      database.refName,
-      capitalize(database.refName),
-    ];
+    const [modelName, className]: [string, string] = [database.refName, capitalize(database.refName)];
 
     const accumulator = Object.fromEntries(
-      Object.entries(database.Insight.field).map(([key, field]) => [
-        key,
-        field.accumulate,
-      ]),
+      Object.entries(database.Insight[FIELD_META]).map(([key, field]) => [key, field.accumulate])
     );
     const defaultInsight = Object.fromEntries(
-      Object.entries(database.Insight.field).map(([key, field]) => [
-        key,
-        field.default,
-      ]),
+      Object.entries(database.Insight[FIELD_META]).map(([key, field]) => [key, field.default])
     );
 
     const makeSafeQuery = (query?: QueryOf<Doc>) =>
@@ -386,46 +310,30 @@ export class DatabaseModelRegistry {
         ...convertAggregateMatch(query),
       },
     });
-    const getListQuery = (
-      query?: QueryOf<Doc>,
-      queryOption?: ListQueryOption<Sort, Obj>,
-    ) => {
+    const getListQuery = (query?: QueryOf<Doc>, queryOption?: ListQueryOption<Sort, Obj>) => {
       const find = makeSafeQuery(query) as { [key: string]: any };
-      const sort = getFilterSortByKey(
-        database.Filter,
-        (queryOption?.sort as string) ?? "latest",
-      ) as { [key: string]: 1 | -1 };
+      const sort = getFilterSortByKey(database.Filter, (queryOption?.sort as string) ?? "latest") as {
+        [key: string]: 1 | -1;
+      };
       const skip = queryOption?.skip ?? 0;
-      const limit =
-        queryOption?.limit === null
-          ? DEFAULT_PAGE_SIZE
-          : (queryOption?.limit ?? 0);
+      const limit = queryOption?.limit === null ? DEFAULT_PAGE_SIZE : (queryOption?.limit ?? 0);
       const select = queryOption?.select;
       const sample = queryOption?.sample;
       return { find, sort, skip, limit, select, sample };
     };
-    const getFindQuery = (
-      query?: QueryOf<Doc>,
-      queryOption?: FindQueryOption<Sort, Obj>,
-    ) => {
+    const getFindQuery = (query?: QueryOf<Doc>, queryOption?: FindQueryOption<Sort, Obj>) => {
       const find = makeSafeQuery(query) as { [key: string]: any };
-      const sort = getFilterSortByKey(
-        database.Filter,
-        (queryOption?.sort as string) ?? "latest",
-      ) as { [key: string]: 1 | -1 };
+      const sort = getFilterSortByKey(database.Filter, (queryOption?.sort as string) ?? "latest") as {
+        [key: string]: 1 | -1;
+      };
       const skip = queryOption?.skip ?? 0;
       const select = queryOption?.select;
       const sample = queryOption?.sample ?? false;
       return { find, sort, skip, select, sample };
     };
     const getSearchSort = (sortKey?: Sort | null) => {
-      const sort = getFilterSortByKey(
-        database.Filter,
-        (sortKey as string) ?? "latest",
-      );
-      return Object.entries(sort).map(
-        ([key, value]) => `${key}:${value === 1 ? "asc" : "desc"}`,
-      );
+      const sort = getFilterSortByKey(database.Filter, (sortKey as string) ?? "latest");
+      return Object.entries(sort).map(([key, value]) => `${key}:${value === 1 ? "asc" : "desc"}`);
     };
     const loader = createLoader(model as unknown as MongooseModel<any>);
     const cacheDatabase = new CacheDatabase(database.refName, redis);
@@ -438,107 +346,51 @@ export class DatabaseModelRegistry {
         readonly __model: Mdl<any, any> = model;
         readonly __cache: CacheDatabase = cacheDatabase;
         readonly __searcher: SearchDatabase = searchDatabase;
-        readonly __loader: DataLoader<string, HydratedDocument<any>, string> =
-          loader;
-        async __list(
-          query?: QueryOf<Doc>,
-          queryOption?: ListQueryOption<Sort, Obj>,
-        ): Promise<Doc[]> {
-          const { find, sort, skip, limit, select, sample } = getListQuery(
-            query,
-            queryOption,
-          );
+        readonly __loader: DataLoader<string, HydratedDocument<any>, string> = loader;
+        async __list(query?: QueryOf<Doc>, queryOption?: ListQueryOption<Sort, Obj>): Promise<Doc[]> {
+          const { find, sort, skip, limit, select, sample } = getListQuery(query, queryOption);
           return sample
             ? await this.__model.sample(find, limit) // TODO: select 추가 필요
-            : ((await this.__model
-                .find(find, select)
-                .sort(sort)
-                .skip(skip)
-                .limit(limit)) as Doc[]);
+            : ((await this.__model.find(find, select).sort(sort).skip(skip).limit(limit)) as Doc[]);
         }
-        async __listIds(
-          query?: QueryOf<Doc>,
-          queryOption?: ListQueryOption<Sort, Obj>,
-        ): Promise<string[]> {
-          const { find, sort, skip, limit, sample } = getListQuery(
-            query,
-            queryOption,
-          );
+        async __listIds(query?: QueryOf<Doc>, queryOption?: ListQueryOption<Sort, Obj>): Promise<string[]> {
+          const { find, sort, skip, limit, sample } = getListQuery(query, queryOption);
           return (
             sample
-              ? await this.__model.sample(find, limit, [
-                  { $project: { _id: 1 } },
-                ])
-              : await this.__model
-                  .find(find)
-                  .sort(sort)
-                  .skip(skip)
-                  .limit(limit)
-                  .select("_id")
+              ? await this.__model.sample(find, limit, [{ $project: { _id: 1 } }])
+              : await this.__model.find(find).sort(sort).skip(skip).limit(limit).select("_id")
           ).map(({ _id }) => _id.toString());
         }
-        async __find(
-          query?: QueryOf<Doc>,
-          queryOption?: FindQueryOption<Sort, Obj>,
-        ): Promise<Doc | null> {
-          const { find, sort, skip, select, sample } = getFindQuery(
-            query,
-            queryOption,
-          );
+        async __find(query?: QueryOf<Doc>, queryOption?: FindQueryOption<Sort, Obj>): Promise<Doc | null> {
+          const { find, sort, skip, select, sample } = getFindQuery(query, queryOption);
           const doc = sample
             ? await this.__model.sampleOne(find) // TODO: select 추가 필요
             : await this.__model.findOne(find, select).sort(sort).skip(skip);
           if (!doc) return null;
           return doc as Doc;
         }
-        async __findId(
-          query?: QueryOf<Doc>,
-          queryOption?: FindQueryOption<Sort, Obj>,
-        ): Promise<string | null> {
+        async __findId(query?: QueryOf<Doc>, queryOption?: FindQueryOption<Sort, Obj>): Promise<string | null> {
           const { find, sort, skip, sample } = getFindQuery(query, queryOption);
           const doc = sample
             ? await this.__model.sampleOne(find, [{ $project: { _id: 1 } }])
-            : await this.__model
-                .findOne(find)
-                .sort(sort)
-                .skip(skip)
-                .select("_id");
+            : await this.__model.findOne(find).sort(sort).skip(skip).select("_id");
           if (!doc) return null;
           return doc._id.toString();
         }
-        async __pick(
-          query?: QueryOf<Doc>,
-          queryOption?: FindQueryOption<Sort, Obj>,
-        ): Promise<Doc> {
-          const { find, sort, skip, select, sample } = getFindQuery(
-            query,
-            queryOption,
-          );
+        async __pick(query?: QueryOf<Doc>, queryOption?: FindQueryOption<Sort, Obj>): Promise<Doc> {
+          const { find, sort, skip, select, sample } = getFindQuery(query, queryOption);
           const doc = sample
             ? await this.__model.sampleOne(find) // TODO: select 추가 필요
             : await this.__model.findOne(find, select).sort(sort).skip(skip);
-          if (!doc)
-            throw new Error(
-              `No Document (${database.refName}): ${JSON.stringify(query)}`,
-            );
+          if (!doc) throw new Error(`No Document (${database.refName}): ${JSON.stringify(query)}`);
           return doc as Doc;
         }
-        async __pickId(
-          query?: QueryOf<Doc>,
-          queryOption?: FindQueryOption<Sort, Obj>,
-        ): Promise<string> {
+        async __pickId(query?: QueryOf<Doc>, queryOption?: FindQueryOption<Sort, Obj>): Promise<string> {
           const { find, sort, skip, sample } = getFindQuery(query, queryOption);
           const doc = sample
             ? await this.__model.sampleOne(find, [{ $project: { _id: 1 } }])
-            : await this.__model
-                .findOne(find)
-                .sort(sort)
-                .skip(skip)
-                .select("_id");
-          if (!doc)
-            throw new Error(
-              `No Document (${database.refName}): ${JSON.stringify(query)}`,
-            );
+            : await this.__model.findOne(find).sort(sort).skip(skip).select("_id");
+          if (!doc) throw new Error(`No Document (${database.refName}): ${JSON.stringify(query)}`);
           return doc._id.toString();
         }
         async __exists(query?: QueryOf<Doc>): Promise<string | null> {
@@ -559,16 +411,10 @@ export class DatabaseModelRegistry {
           const data = res[0];
           return data ?? defaultInsight;
         }
-        listenPre(
-          type: SaveEventType,
-          listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-        ) {
+        listenPre(type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) {
           return this.__model.listenPre(type, listener);
         }
-        listenPost(
-          type: SaveEventType,
-          listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-        ) {
+        listenPost(type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) {
           return this.__model.listenPost(type, listener);
         }
         async __get(id: string) {
@@ -604,10 +450,7 @@ export class DatabaseModelRegistry {
           const doc = await this.__model.pickById(id);
           return await doc.set(data).save();
         }
-        async [`update${className}`](
-          id: string,
-          data: DataInputOf<Input, Obj>,
-        ) {
+        async [`update${className}`](id: string, data: DataInputOf<Input, Obj>) {
           return this.__update(id, data);
         }
         async __remove(id: string) {
@@ -617,10 +460,7 @@ export class DatabaseModelRegistry {
         async [`remove${className}`](id: string) {
           return this.__remove(id);
         }
-        async __search(
-          searchText: string,
-          queryOption: ListQueryOption<Sort, Obj> = {},
-        ) {
+        async __search(searchText: string, queryOption: ListQueryOption<Sort, Obj> = {}) {
           // TODO: select 추가 필요
           const { skip, limit, sort } = queryOption;
           const { ids, total } = await this.__searcher.searchIds(searchText, {
@@ -631,16 +471,10 @@ export class DatabaseModelRegistry {
           const docs = await this.__loader.loadMany(ids);
           return { docs, count: total };
         }
-        async [`search${className}`](
-          searchText: string,
-          queryOption: ListQueryOption<Sort, Obj> = {},
-        ) {
+        async [`search${className}`](searchText: string, queryOption: ListQueryOption<Sort, Obj> = {}) {
           return this.__search(searchText, queryOption);
         }
-        async __searchDocs(
-          searchText: string,
-          queryOption: ListQueryOption<Sort, Obj> = {},
-        ) {
+        async __searchDocs(searchText: string, queryOption: ListQueryOption<Sort, Obj> = {}) {
           // TODO: select 추가 필요
           const { skip, limit, sort } = queryOption;
           const { ids } = await this.__searcher.searchIds(searchText, {
@@ -650,10 +484,7 @@ export class DatabaseModelRegistry {
           });
           return await this.__loader.loadMany(ids);
         }
-        async [`searchDocs${className}`](
-          searchText: string,
-          queryOption: ListQueryOption<Sort, Obj> = {},
-        ) {
+        async [`searchDocs${className}`](searchText: string, queryOption: ListQueryOption<Sort, Obj> = {}) {
           return this.__searchDocs(searchText, queryOption);
         }
         async __searchCount(searchText: string) {
@@ -671,10 +502,7 @@ export class DatabaseModelRegistry {
       [`${modelName}Search`]: searchDatabase,
     });
 
-    const getQueryDataFromKey = (
-      queryKey: string,
-      args: any,
-    ): { query: any; queryOption: any } => {
+    const getQueryDataFromKey = (queryKey: string, args: any): { query: any; queryOption: any } => {
       const lastArg = args.at(-1);
       const hasQueryOption =
         lastArg &&
@@ -695,58 +523,43 @@ export class DatabaseModelRegistry {
     Object.entries(filterMeta.query).forEach(([queryKey, filterInfo]) => {
       const queryFn = filterInfo.queryFn;
       if (!queryFn) throw new Error(`No query function for key: ${queryKey}`);
-      DatabaseModel.prototype[`list${capitalize(queryKey)}`] = async function (
-        ...args: any
-      ) {
+      DatabaseModel.prototype[`list${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__list(query, queryOption);
       };
-      DatabaseModel.prototype[`listIds${capitalize(queryKey)}`] =
-        async function (...args: any) {
-          const { query, queryOption } = getQueryDataFromKey(queryKey, args);
-          return this.__listIds(query, queryOption);
-        };
-      DatabaseModel.prototype[`find${capitalize(queryKey)}`] = async function (
-        ...args: any
-      ) {
+      DatabaseModel.prototype[`listIds${capitalize(queryKey)}`] = async function (...args: any) {
+        const { query, queryOption } = getQueryDataFromKey(queryKey, args);
+        return this.__listIds(query, queryOption);
+      };
+      DatabaseModel.prototype[`find${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__find(query, queryOption);
       };
-      DatabaseModel.prototype[`findId${capitalize(queryKey)}`] =
-        async function (...args: any) {
-          const { query, queryOption } = getQueryDataFromKey(queryKey, args);
-          return this.__findId(query, queryOption);
-        };
-      DatabaseModel.prototype[`pick${capitalize(queryKey)}`] = async function (
-        ...args: any
-      ) {
+      DatabaseModel.prototype[`findId${capitalize(queryKey)}`] = async function (...args: any) {
+        const { query, queryOption } = getQueryDataFromKey(queryKey, args);
+        return this.__findId(query, queryOption);
+      };
+      DatabaseModel.prototype[`pick${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__pick(query, queryOption);
       };
-      DatabaseModel.prototype[`pickId${capitalize(queryKey)}`] =
-        async function (...args: any) {
-          const { query, queryOption } = getQueryDataFromKey(queryKey, args);
-          return this.__pickId(query, queryOption);
-        };
-      DatabaseModel.prototype[`exists${capitalize(queryKey)}`] =
-        async function (...args: any) {
-          const query = queryFn(...args);
-          return this.__exists(query);
-        };
-      DatabaseModel.prototype[`count${capitalize(queryKey)}`] = async function (
-        ...args: any
-      ) {
+      DatabaseModel.prototype[`pickId${capitalize(queryKey)}`] = async function (...args: any) {
+        const { query, queryOption } = getQueryDataFromKey(queryKey, args);
+        return this.__pickId(query, queryOption);
+      };
+      DatabaseModel.prototype[`exists${capitalize(queryKey)}`] = async function (...args: any) {
+        const query = queryFn(...args);
+        return this.__exists(query);
+      };
+      DatabaseModel.prototype[`count${capitalize(queryKey)}`] = async function (...args: any) {
         const query = queryFn(...args);
         return this.__count(query);
       };
-      DatabaseModel.prototype[`insight${capitalize(queryKey)}`] =
-        async function (...args: any) {
-          const query = queryFn(...args);
-          return this.__insight(query);
-        };
-      DatabaseModel.prototype[`query${capitalize(queryKey)}`] = function (
-        ...args: any
-      ) {
+      DatabaseModel.prototype[`insight${capitalize(queryKey)}`] = async function (...args: any) {
+        const query = queryFn(...args);
+        return this.__insight(query);
+      };
+      DatabaseModel.prototype[`query${capitalize(queryKey)}`] = function (...args: any) {
         return queryFn(...args);
       };
     });
@@ -754,22 +567,14 @@ export class DatabaseModelRegistry {
     Object.entries(loaderInfos).forEach(([key, loaderInfo]) => {
       const loader =
         loaderInfo.type === "field"
-          ? createLoader(
-              model as unknown as MongooseModel<any>,
-              loaderInfo.field,
-              loaderInfo.defaultQuery,
-            )
+          ? createLoader(model as unknown as MongooseModel<any>, loaderInfo.field, loaderInfo.defaultQuery)
           : loaderInfo.type === "arrayField"
-            ? createArrayLoader(
-                model as unknown as MongooseModel<any>,
-                loaderInfo.field,
-                loaderInfo.defaultQuery,
-              )
+            ? createArrayLoader(model as unknown as MongooseModel<any>, loaderInfo.field, loaderInfo.defaultQuery)
             : loaderInfo.type === "query"
               ? createQueryLoader(
                   model as unknown as MongooseModel<any>,
                   loaderInfo.field ?? [],
-                  loaderInfo.defaultQuery,
+                  loaderInfo.defaultQuery
                 )
               : null;
       DatabaseModel.prototype[key] = loader;
@@ -777,17 +582,7 @@ export class DatabaseModelRegistry {
     Object.getOwnPropertyNames(database.Model.prototype).forEach((key) => {
       DatabaseModel.prototype[key] = database.Model.prototype[key];
     });
-    this.#modelMap.set(
-      database.refName,
-      DatabaseModel as Cls<DatabaseModel<string, any, any, any, any, any>>,
-    );
-    return new DatabaseModel() as DatabaseModel<
-      T,
-      Input,
-      Doc,
-      Model,
-      Insight,
-      Filter
-    >;
+    this.#modelMap.set(database.refName, DatabaseModel as Cls<DatabaseModel<string, any, any, any, any, any>>);
+    return new DatabaseModel() as DatabaseModel<T, Input, Doc, Model, Insight, Filter>;
   }
 }

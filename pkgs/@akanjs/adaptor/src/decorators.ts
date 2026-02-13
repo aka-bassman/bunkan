@@ -10,31 +10,21 @@ import type { UnCls } from "@akanjs/base";
 import type { Database, DatabaseModel, Mdl } from "../../document/src";
 
 export const Try = () => {
-  return function (
-    target: object,
-    key: string,
-    descriptor: PropertyDescriptor,
-  ) {
+  return function (target: object, key: string, descriptor: PropertyDescriptor) {
     const originMethod = descriptor.value;
     descriptor.value = async function (...args: any[]) {
       try {
         const result = await originMethod.apply(this, args);
         return result;
       } catch (e) {
-        (this as UnCls<ServiceCls | AdaptorCls>).logger?.warn(
-          `${key} action error return: ${e}`,
-        );
+        (this as UnCls<ServiceCls | AdaptorCls>).logger?.warn(`${key} action error return: ${e}`);
       }
     };
   };
 };
 
 export const Transaction = () => {
-  return function (
-    target: object,
-    key: string,
-    descriptor: PropertyDescriptor,
-  ) {
+  return function (target: object, key: string, descriptor: PropertyDescriptor) {
     const originMethod = descriptor.value;
     descriptor.value = function (...args: any[]) {
       const connection = (this as UnCls<ServiceCls>).connection;
@@ -53,15 +43,8 @@ export const Transaction = () => {
 };
 
 // TODO: Need to be refactored.
-export const Cache = (
-  timeout = 1000,
-  getCacheKey?: (...args: any[]) => string,
-): MethodDecorator => {
-  return function (
-    target: object,
-    key: string | symbol,
-    descriptor: PropertyDescriptor,
-  ) {
+export const Cache = (timeout = 1000, getCacheKey?: (...args: any[]) => string): MethodDecorator => {
+  return function (target: object, key: string | symbol, descriptor: PropertyDescriptor) {
     const originMethod = descriptor.value;
     const cacheMap = new Map<string, any>();
     const timerMap = new Map<string, NodeJS.Timeout>();
@@ -95,21 +78,16 @@ export const Cache = (
             timerMap.delete(cacheKey);
           }, timeout);
           timerMap.set(cacheKey, timer);
-        } else
-          await cache.set(cacheKey, JSON.stringify(value), { PX: timeout });
+        } else await cache.set(cacheKey, JSON.stringify(value), { PX: timeout });
       };
       const cachedData = await getCache(cacheKey);
       if (cachedData) {
-        (this as UnCls<ServiceCls | AdaptorCls>).logger?.trace(
-          `${model.modelName} cache hit: ${cacheKey}`,
-        );
+        (this as UnCls<ServiceCls | AdaptorCls>).logger?.trace(`${model.modelName} cache hit: ${cacheKey}`);
         return cachedData;
       }
       const result = await originMethod.apply(this, args);
       await setCache(cacheKey, result);
-      (this as UnCls<ServiceCls | AdaptorCls>).logger?.trace(
-        `${model.modelName} cache set: ${cacheKey}`,
-      );
+      (this as UnCls<ServiceCls | AdaptorCls>).logger?.trace(`${model.modelName} cache set: ${cacheKey}`);
       return result;
     };
   };

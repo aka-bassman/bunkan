@@ -1,7 +1,5 @@
-import type { RequestPolicy } from "@urql/core";
-
 export interface FetchPolicy<Returns = any> {
-  cache?: boolean | number | RequestPolicy;
+  cache?: boolean | number;
   crystalize?: boolean;
   url?: string;
   onError?: (error: string) => void;

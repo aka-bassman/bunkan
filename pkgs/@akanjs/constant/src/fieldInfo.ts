@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   arraiedModel,
+  PRIMITIVE_SERVER_VALUE,
   type Dayjs,
   type EnumInstance,
   Float,
@@ -15,24 +16,20 @@ import {
   PrimitiveRegistry,
   Any,
   type SingleValue,
+  PRIMITIVE_CLIENT_VALUE,
 } from "@akanjs/base";
 import type { AccumulatorOperator } from "mongoose";
 
-import { type Cnst } from "./baseGql";
+import { type ConstantCls } from "./via";
 import { ConstantRegistry } from "./constantRegistry";
-import { type ConstantFieldProps, type FieldPreset } from "./scalar";
 
 export type ParamFieldType =
   | (typeof PrimitiveScalar & {
-      $clientValue: string | number | boolean | Dayjs;
+      [PRIMITIVE_CLIENT_VALUE]: string | number | boolean | Dayjs;
     })
   | EnumInstance<string, string>;
 
-export type ConstantFieldType =
-  | typeof PrimitiveScalar
-  | Cls
-  | MapConstructor
-  | EnumInstance<string, number>;
+export type ConstantFieldType = typeof PrimitiveScalar | Cls | MapConstructor | EnumInstance<string, number>;
 export type ConstantFieldTypeInput =
   | ConstantFieldType
   | ConstantFieldType[]
@@ -46,7 +43,7 @@ export type FieldToValue<Field, MapValue = any> = Field extends null
     : Field extends (infer F)[]
       ? FieldToValue<F>[]
       : Field extends typeof PrimitiveScalar
-        ? Field["$serverValue"]
+        ? Field[typeof PRIMITIVE_SERVER_VALUE]
         : Field extends EnumInstance<string, infer V>
           ? V
           : Field extends Cls
@@ -63,6 +60,31 @@ export type ExtractFieldInfoObject<Obj extends FieldInfoObject> = {
     : never;
 };
 
+export interface ConstantFieldProps<FieldValue = any, MapValue = any, Metadata = { [key: string]: any }> {
+  nullable?: boolean;
+  ref?: string;
+  refPath?: string;
+  refType?: "child" | "parent" | "relation";
+  default?: FieldValue | ((doc: { id: string }) => FieldValue);
+  type?: FieldPreset;
+  fieldType?: "property" | "hidden" | "resolve";
+  immutable?: boolean;
+  min?: number;
+  max?: number;
+  enum?: EnumInstance;
+  select?: boolean;
+  minlength?: number;
+  maxlength?: number;
+  accumulate?: AccumulatorOperator;
+  example?: FieldValue;
+  of?: MapValue; // for Map type fields
+  validate?: (value: FieldValue, model: any) => boolean;
+  text?: "search" | "filter";
+  meta?: Metadata;
+}
+export const fieldPresets = ["email", "password", "url"] as const;
+export type FieldPreset = (typeof fieldPresets)[number];
+
 class FieldInfo<
   Value extends ConstantFieldTypeInput | null = null,
   ExplicitType = unknown,
@@ -76,9 +98,7 @@ class FieldInfo<
     this.value = value;
     const [singleValue, arrDepth] = getNonArrayModel(value as Cls);
     const isEnumValue = isEnum(singleValue);
-    const valueType = isEnumValue
-      ? arraiedModel((singleValue as EnumInstance).type, arrDepth)
-      : value;
+    const valueType = isEnumValue ? arraiedModel((singleValue as EnumInstance).type, arrDepth) : value;
     this.type = valueType as ConstantFieldTypeInput;
     this.option = {
       ...option,
@@ -100,11 +120,7 @@ class FieldInfo<
   }
 }
 
-interface ConstantFieldBuildProps<
-  FieldValue = any,
-  MapValue = any,
-  Metadata = { [key: string]: any },
-> {
+interface ConstantFieldBuildProps<FieldValue = any, MapValue = any, Metadata = { [key: string]: any }> {
   nullable: boolean;
   ref?: string;
   refPath?: string;
@@ -124,7 +140,7 @@ interface ConstantFieldBuildProps<
   of?: MapValue; // for Map type fields
   validate?: (value: FieldValue, model: any) => boolean;
   text?: "search" | "filter";
-  modelRef: Cnst;
+  modelRef: ConstantCls;
   arrDepth: number;
   optArrDepth: number;
   meta: Metadata;
@@ -175,7 +191,7 @@ export class ConstantField<
   readonly of?: MapValue; // for Map type fields
   readonly validate?: (value: FieldValue, model: any) => boolean;
   readonly text?: "search" | "filter";
-  readonly modelRef: Cnst;
+  readonly modelRef: ConstantCls;
   readonly arrDepth: number;
   readonly optArrDepth: number;
   readonly meta: Metadata;
@@ -206,12 +222,8 @@ export class ConstantField<
     this.meta = props.meta;
   }
 
-  static fromFieldInfo<
-    FieldValue = any,
-    MapValue = any,
-    Metadata = { [key: string]: any },
-  >(
-    fieldInfo: FieldInfo<any, MapValue, Metadata>,
+  static fromFieldInfo<FieldValue = any, MapValue = any, Metadata = { [key: string]: any }>(
+    fieldInfo: FieldInfo<any, MapValue, Metadata>
   ): ConstantField<FieldValue, MapValue, Metadata> {
     const [modelRef, arrDepth] = getNonArrayModel(fieldInfo.type as Cls);
     const [option, optArrDepth] = getNonArrayModel(fieldInfo.option);
@@ -250,10 +262,7 @@ export class ConstantField<
     return !PrimitiveRegistry.has(this.modelRef);
   }
   get isScalar() {
-    return (
-      ConstantRegistry.isScalar(this.modelRef) ||
-      PrimitiveRegistry.has(this.modelRef)
-    );
+    return ConstantRegistry.isScalar(this.modelRef) || PrimitiveRegistry.has(this.modelRef);
   }
   get isArray() {
     return this.arrDepth > 0;
@@ -303,19 +312,13 @@ type FieldOption<
   Metadata extends { [key: string]: any } = { [key: string]: any },
   _FieldToValue = FieldToValue<Value> | null | undefined,
 > =
-  | Omit<
-      ConstantFieldProps<_FieldToValue, MapValue, Metadata>,
-      "enum" | "meta" | "nullable" | "fieldType" | "select"
-    >
+  | Omit<ConstantFieldProps<_FieldToValue, MapValue, Metadata>, "enum" | "meta" | "nullable" | "fieldType" | "select">
   | Omit<
       ConstantFieldProps<SingleValue<_FieldToValue>, MapValue, Metadata>,
       "enum" | "meta" | "nullable" | "fieldType" | "select"
     >[];
 
-export type PlainTypeToFieldType<PlainType> = PlainType extends [
-  infer First,
-  ...infer Rest,
-]
+export type PlainTypeToFieldType<PlainType> = PlainType extends [infer First, ...infer Rest]
   ? PlainTypeToFieldType<First>[]
   : PlainType extends number
     ? typeof Int | typeof Float
@@ -329,7 +332,7 @@ export const field = <
   MapValue = Value extends MapConstructor ? typeof PrimitiveScalar : never,
 >(
   value: Value,
-  option: FieldOption<Value, MapValue> = {},
+  option: FieldOption<Value, MapValue> = {}
 ) =>
   new FieldInfo<Value, ExplicitType, MapValue>(value, {
     ...option,
@@ -342,7 +345,7 @@ field.secret = <
   MapValue = Value extends MapConstructor ? typeof PrimitiveScalar : never,
 >(
   value: Value,
-  option: FieldOption<Value, MapValue> = {},
+  option: FieldOption<Value, MapValue> = {}
 ) =>
   new FieldInfo<Value | null, ExplicitType | null, MapValue>(value, {
     ...option,
@@ -355,7 +358,7 @@ field.hidden = <
   MapValue = Value extends MapConstructor ? typeof PrimitiveScalar : never,
 >(
   value: Value,
-  option: FieldOption<Value, MapValue> = {},
+  option: FieldOption<Value, MapValue> = {}
 ) =>
   new FieldInfo<Value | null, ExplicitType | null, MapValue>(value, {
     ...option,
@@ -369,7 +372,7 @@ export const resolve = <
   MapValue = Value extends MapConstructor ? typeof PrimitiveScalar : never,
 >(
   value: Value,
-  option: FieldOption<Value, MapValue> = {},
+  option: FieldOption<Value, MapValue> = {}
 ) =>
   new FieldInfo<Value, ExplicitType, MapValue>(value, {
     ...option,

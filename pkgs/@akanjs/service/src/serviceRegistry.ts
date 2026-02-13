@@ -49,13 +49,11 @@ export class ServiceRegistry {
     [K in Srvs[number]["refName"]]: Srvs[number];
   } {
     services.forEach((srvRef) => {
-      srvRef.type === "database"
-        ? this.setDatabase(srvRef.refName, srvRef)
-        : this.setPlain(srvRef.refName, srvRef);
+      srvRef.type === "database" ? this.setDatabase(srvRef.refName, srvRef) : this.setPlain(srvRef.refName, srvRef);
     });
-    return Object.fromEntries(
-      services.map((srvRef) => [srvRef.refName, srvRef]),
-    ) as { [K in Srvs[number]["refName"]]: Srvs[number] };
+    return Object.fromEntries(services.map((srvRef) => [srvRef.refName, srvRef])) as {
+      [K in Srvs[number]["refName"]]: Srvs[number];
+    };
   }
 
   static createService<T extends string>(name: T) {
@@ -93,22 +91,13 @@ export class ServiceRegistry {
     _Query extends ExtractQuery<Filter> = ExtractQuery<Filter>,
     _Sort extends ExtractSort<Filter> = ExtractSort<Filter>,
     _DataInputOfDoc extends DataInputOf<Input, Doc> = DataInputOf<Input, Doc>,
-    _FindQueryOption extends FindQueryOption<_Sort, Obj> = FindQueryOption<
-      _Sort,
-      Obj
-    >,
-    _ListQueryOption extends ListQueryOption<_Sort, Obj> = ListQueryOption<
-      _Sort,
-      Obj
-    >,
+    _FindQueryOption extends FindQueryOption<_Sort, Obj> = FindQueryOption<_Sort, Obj>,
+    _ListQueryOption extends ListQueryOption<_Sort, Obj> = ListQueryOption<_Sort, Obj>,
   >(
     database: Database<T, Input, Doc, Model, Middleware, Obj, Insight, Filter>,
     ...libSrvRefs: LibSrvs
   ): Cls<DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>> {
-    const [modelName, className]: [string, string] = [
-      database.refName,
-      capitalize(database.refName),
-    ];
+    const [modelName, className]: [string, string] = [database.refName, capitalize(database.refName)];
     const getDefaultDbService = () => {
       class DbService {
         logger!: Logger;
@@ -132,40 +121,22 @@ export class ServiceRegistry {
         async [`load${className}Many`](ids: string[]) {
           return this.__loadMany(ids);
         }
-        async __list(
-          query: _QueryOfDoc,
-          queryOption?: _ListQueryOption,
-        ): Promise<Doc[]> {
+        async __list(query: _QueryOfDoc, queryOption?: _ListQueryOption): Promise<Doc[]> {
           return await this.__databaseModel.__list(query, queryOption);
         }
-        async __listIds(
-          query: _QueryOfDoc,
-          queryOption?: _ListQueryOption,
-        ): Promise<string[]> {
+        async __listIds(query: _QueryOfDoc, queryOption?: _ListQueryOption): Promise<string[]> {
           return await this.__databaseModel.__listIds(query, queryOption);
         }
-        async __find(
-          query: _QueryOfDoc,
-          queryOption?: _FindQueryOption,
-        ): Promise<Doc | null> {
+        async __find(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<Doc | null> {
           return await this.__databaseModel.__find(query, queryOption);
         }
-        async __findId(
-          query: _QueryOfDoc,
-          queryOption?: _FindQueryOption,
-        ): Promise<string | null> {
+        async __findId(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<string | null> {
           return await this.__databaseModel.__findId(query, queryOption);
         }
-        async __pick(
-          query: _QueryOfDoc,
-          queryOption?: _FindQueryOption,
-        ): Promise<Doc> {
+        async __pick(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<Doc> {
           return await this.__databaseModel.__pick(query, queryOption);
         }
-        async __pickId(
-          query: _QueryOfDoc,
-          queryOption?: _FindQueryOption,
-        ): Promise<string> {
+        async __pickId(query: _QueryOfDoc, queryOption?: _FindQueryOption): Promise<string> {
           return await this.__databaseModel.__pickId(query, queryOption);
         }
         async __exists(query: _QueryOfDoc): Promise<string | null> {
@@ -177,32 +148,17 @@ export class ServiceRegistry {
         async __insight(query: _QueryOfDoc): Promise<Insight> {
           return await this.__databaseModel.__insight(query);
         }
-        async __search(
-          searchText: string,
-          queryOption?: _ListQueryOption,
-        ): Promise<{ docs: Doc[]; count: number }> {
+        async __search(searchText: string, queryOption?: _ListQueryOption): Promise<{ docs: Doc[]; count: number }> {
           // TODO: make query to searchText
           return await this.__databaseModel.__search(searchText, queryOption);
         }
-        async [`search${className}`](
-          searchText: string,
-          queryOption?: _ListQueryOption,
-        ) {
+        async [`search${className}`](searchText: string, queryOption?: _ListQueryOption) {
           return this.__search(searchText, queryOption);
         }
-        async __searchDocs(
-          searchText: string,
-          queryOption?: _ListQueryOption,
-        ): Promise<Doc[]> {
-          return await this.__databaseModel.__searchDocs(
-            searchText,
-            queryOption,
-          );
+        async __searchDocs(searchText: string, queryOption?: _ListQueryOption): Promise<Doc[]> {
+          return await this.__databaseModel.__searchDocs(searchText, queryOption);
         }
-        async [`searchDocs${className}`](
-          searchText: string,
-          queryOption?: _ListQueryOption,
-        ) {
+        async [`searchDocs${className}`](searchText: string, queryOption?: _ListQueryOption) {
           return this.__searchDocs(searchText, queryOption);
         }
         async __searchCount(searchText: string): Promise<number> {
@@ -217,10 +173,7 @@ export class ServiceRegistry {
         async _postCreate(doc: Doc): Promise<Doc> {
           return doc;
         }
-        async _preUpdate(
-          id: string,
-          data: Partial<Doc>,
-        ): Promise<Partial<Doc>> {
+        async _preUpdate(id: string, data: Partial<Doc>): Promise<Partial<Doc>> {
           return data;
         }
         async _postUpdate(doc: Doc): Promise<Doc> {
@@ -232,16 +185,10 @@ export class ServiceRegistry {
         async _postRemove(doc: Doc): Promise<Doc> {
           return doc;
         }
-        listenPre(
-          type: SaveEventType,
-          listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-        ) {
+        listenPre(type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) {
           return this.__databaseModel.listenPre(type, listener);
         }
-        listenPost(
-          type: SaveEventType,
-          listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>,
-        ) {
+        listenPost(type: SaveEventType, listener: (doc: Doc, type: CRUDEventType) => PromiseOrObject<void>) {
           return this.__databaseModel.listenPost(type, listener);
         }
         async __create(data: _DataInputOfDoc): Promise<Doc> {
@@ -257,10 +204,7 @@ export class ServiceRegistry {
           const doc = await this.__databaseModel.__update(id, input);
           return await this._postUpdate(doc);
         }
-        async [`update${className}`](
-          id: string,
-          data: _DataInputOfDoc,
-        ): Promise<Doc> {
+        async [`update${className}`](id: string, data: _DataInputOfDoc): Promise<Doc> {
           return this.__update(id, data);
         }
         async __remove(id: string): Promise<Doc> {
@@ -274,10 +218,7 @@ export class ServiceRegistry {
       }
       return DbService;
     };
-    const getQueryDataFromKey = (
-      queryKey: string,
-      args: any,
-    ): { query: any; queryOption: any } => {
+    const getQueryDataFromKey = (queryKey: string, args: any): { query: any; queryOption: any } => {
       const lastArg = args.at(-1);
       const hasQueryOption =
         lastArg &&
@@ -293,8 +234,7 @@ export class ServiceRegistry {
       return { query, queryOption };
     };
     const filterMeta = getFilterMeta(database.Filter);
-    const DbService =
-      libSrvRefs.length > 0 ? class ExtendedService {} : getDefaultDbService();
+    const DbService = libSrvRefs.length > 0 ? class ExtendedService {} : getDefaultDbService();
     const queryKeys = Object.keys(filterMeta.query);
     queryKeys.forEach((queryKey) => {
       const filterInfo = getFilterInfoByKey(database.Filter, queryKey);

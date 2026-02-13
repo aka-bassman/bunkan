@@ -8,7 +8,8 @@
     "@types/figlet": "^1.7.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.23",
-    "@types/pluralize": "^0.0.33"
+    "@types/pluralize": "^0.0.33",
+    "prettier-plugin-tailwindcss": "^0.7.2"
   },
   "peerDependencies": {
     "typescript": "^5"

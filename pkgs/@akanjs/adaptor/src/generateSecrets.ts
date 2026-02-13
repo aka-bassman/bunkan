@@ -1,12 +1,6 @@
 import { type BackendEnv, type BaseEnv, baseEnv } from "@akanjs/base";
 import { createHash } from "crypto";
-import {
-  createTunnel,
-  type ForwardOptions,
-  type ServerOptions,
-  type SshOptions,
-  type TunnelOptions,
-} from "tunnel-ssh";
+import { createTunnel, type ForwardOptions, type ServerOptions, type SshOptions, type TunnelOptions } from "tunnel-ssh";
 
 const generateHexStringFromSeed = (seed: string, length = 256) => {
   let hexString = "";
@@ -19,31 +13,19 @@ const generateHexStringFromSeed = (seed: string, length = 256) => {
   return hexString.substring(0, length * 2);
 };
 
-export const generateJwtSecret = (
-  appName: string,
-  environment: BaseEnv["environment"],
-) => {
+export const generateJwtSecret = (appName: string, environment: BaseEnv["environment"]) => {
   const seed = `${appName}-${environment}-jwt-secret`;
   return generateHexStringFromSeed(seed);
 };
 
-export const generateAeskey = (
-  appName: string,
-  environment: BaseEnv["environment"],
-) => {
+export const generateAeskey = (appName: string, environment: BaseEnv["environment"]) => {
   const seed = `${appName}-${environment}-aes-key`;
   return createHash("sha256").update(seed).digest("hex");
 };
 
 const DEFAULT_CLOUD_PORT = 30000;
 const getEnvironmentPort = (environment: BaseEnv["environment"]) =>
-  environment === "main"
-    ? 2000
-    : environment === "develop"
-      ? 1000
-      : environment === "debug"
-        ? 0
-        : 0;
+  environment === "main" ? 2000 : environment === "develop" ? 1000 : environment === "debug" ? 0 : 0;
 const getServicePort = (service: "redis" | "mongo" | "meili") =>
   service === "redis" ? 300 : service === "mongo" ? 400 : 500; // + (appCode % 10) * 10 + (appCode >= 10 ? 5 : 0);
 
@@ -77,12 +59,7 @@ const createDatabaseTunnel = async ({
     dstAddr: `${type}-0.${type}-svc.${appName}-${environment}`,
     dstPort: type === "mongo" ? 27017 : type === "redis" ? 6379 : 7700,
   };
-  const [server, client] = await createTunnel(
-    tunnelOptions,
-    serverOptions,
-    sshOptions,
-    forwardOptions,
-  );
+  const [server, client] = await createTunnel(tunnelOptions, serverOptions, sshOptions, forwardOptions);
   return `localhost:${port}`;
 };
 
@@ -92,20 +69,11 @@ interface RedisEnv {
   operationMode: BaseEnv["operationMode"];
   sshOptions?: SshOptions;
 }
-export const generateRedisUri = async ({
-  appName,
-  environment,
-  operationMode,
-  sshOptions,
-}: RedisEnv) => {
+export const generateRedisUri = async ({ appName, environment, operationMode, sshOptions }: RedisEnv) => {
   if (process.env.REDIS_URI) return process.env.REDIS_URI;
   else if (environment === "local") return "redis://localhost:6379";
   const port =
-    operationMode === "local"
-      ? DEFAULT_CLOUD_PORT +
-        getEnvironmentPort(environment) +
-        getServicePort("redis")
-      : 6379;
+    operationMode === "local" ? DEFAULT_CLOUD_PORT + getEnvironmentPort(environment) + getServicePort("redis") : 6379;
   const url =
     operationMode === "cloud"
       ? `redis-svc.${appName}-${environment}.svc.cluster.local`
@@ -140,16 +108,11 @@ export const generateMongoUri = async ({
 }: MongoEnv) => {
   const dbName = `${appName}-${environment}`;
   if (process.env.MONGO_URI) return process.env.MONGO_URI;
-  else if (environment === "local")
-    return `mongodb://localhost:27017/${dbName}`;
+  else if (environment === "local") return `mongodb://localhost:27017/${dbName}`;
 
   const record = operationMode === "cloud" ? "mongodb+srv" : "mongodb";
   const port =
-    operationMode === "local"
-      ? DEFAULT_CLOUD_PORT +
-        getEnvironmentPort(environment) +
-        getServicePort("mongo")
-      : 27017;
+    operationMode === "local" ? DEFAULT_CLOUD_PORT + getEnvironmentPort(environment) + getServicePort("mongo") : 27017;
   const url =
     operationMode === "cloud"
       ? `mongo-svc.${appName}-${environment}.svc.cluster.local`
@@ -165,9 +128,7 @@ export const generateMongoUri = async ({
   const usernameEncoded = password ? encodeURIComponent(username) : null;
   const passwordEncoded = password ? encodeURIComponent(password) : null;
   const directConnection = operationMode === "cloud" ? false : true;
-  const authInfo = usernameEncoded
-    ? `${usernameEncoded}:${passwordEncoded}@`
-    : "";
+  const authInfo = usernameEncoded ? `${usernameEncoded}:${passwordEncoded}@` : "";
   const uri = `${record}://${authInfo}${url}/${dbName}?authSource=${dbName}&readPreference=primary&ssl=false&retryWrites=true&directConnection=${directConnection}`;
   return uri;
 };
@@ -177,11 +138,7 @@ interface MeiliEnv {
   environment: BaseEnv["environment"];
   operationMode: BaseEnv["operationMode"];
 }
-export const generateMeiliUri = async ({
-  appName,
-  environment,
-  operationMode,
-}: MeiliEnv) => {
+export const generateMeiliUri = async ({ appName, environment, operationMode }: MeiliEnv) => {
   if (process.env.MEILI_URI) return process.env.MEILI_URI;
   else if (environment === "local") return "http://localhost:7700";
   const protocol = operationMode === "local" ? "https" : "http";
@@ -204,13 +161,7 @@ export const generateHost = (env: BackendEnv) => {
   else return `${env.appName}-${env.environment}.${baseEnv.serveDomain}`;
 };
 
-export const generateMeiliKey = ({
-  appName,
-  environment,
-}: {
-  appName: string;
-  environment: string;
-}) => {
+export const generateMeiliKey = ({ appName, environment }: { appName: string; environment: string }) => {
   if (process.env.MEILI_MASTER_KEY) return process.env.MEILI_MASTER_KEY;
   else if (environment === "local") return "masterKey";
   return `meilisearch-key-${appName}-${environment}`;

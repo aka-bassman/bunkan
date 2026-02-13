@@ -2,10 +2,7 @@ export type SignalTransportType = "http" | "websocket";
 export class SignalContext {
   transport: SignalTransportType;
   ctx: HttpExecutionContext | WebSocketExecutionContext;
-  constructor(
-    transport: SignalTransportType,
-    ctx: HttpExecutionContext | WebSocketExecutionContext,
-  ) {
+  constructor(transport: SignalTransportType, ctx: HttpExecutionContext | WebSocketExecutionContext) {
     this.transport = transport;
     this.ctx = ctx;
   }
@@ -14,8 +11,7 @@ export class SignalContext {
     return this.ctx as HttpExecutionContext;
   }
   getWebSocketContext() {
-    if (this.transport !== "websocket")
-      throw new Error("Transport is not websocket");
+    if (this.transport !== "websocket") throw new Error("Transport is not websocket");
     return this.ctx as WebSocketExecutionContext;
   }
 }

@@ -5,14 +5,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/require-await */
 
-import type {
-  BackendEnv,
-  MergeAllTypes,
-  Prettify,
-  PromiseOrObject,
-  Cls,
-  UnCls,
-} from "@akanjs/base";
+import type { BackendEnv, MergeAllTypes, Prettify, PromiseOrObject, Cls, UnCls } from "@akanjs/base";
 import { applyMixins, capitalize, Logger, lowerlize } from "@akanjs/common";
 import type { DocumentModel, FieldToValue, QueryOf } from "@akanjs/constant";
 import {
@@ -33,16 +26,12 @@ import {
   type SaveEventType,
   getFilterMeta,
 } from "@akanjs/document";
-import { ApiInfo, InternalApiInfo } from "@akanjs/signal";
+import { EndpointInfo, InternalInfo } from "@akanjs/signal";
 import type { Job, Queue as BullQueue } from "bull";
 import type { HydratedDocument } from "mongoose";
 import type { Server } from "socket.io";
 
-import {
-  type ExtractInjectInfoObject,
-  type InjectBuilder,
-  injectionBuilder,
-} from "./injectInfo";
+import { type ExtractInjectInfoObject, type InjectBuilder, injectionBuilder } from "./injectInfo";
 import type { DatabaseService } from "./types";
 
 export type GetServices<AllSrvs extends { [key: string]: Cls | undefined }> = {
@@ -144,51 +133,17 @@ interface ServiceMeta {
 // }
 
 export type InternalServerSignal<Internal> = {
-  [K in keyof Internal as Internal[K] extends InternalApiInfo<
-    "process",
-    any,
-    any,
-    any,
-    any,
-    any,
-    any
-  >
+  [K in keyof Internal as Internal[K] extends InternalInfo<"process", any, any, any, any, any, any>
     ? K
-    : never]: Internal[K] extends InternalApiInfo<
-    "process",
-    any,
-    infer Args,
-    any,
-    any,
-    infer Returns,
-    any
-  >
+    : never]: Internal[K] extends InternalInfo<"process", any, infer Args, any, any, infer Returns, any>
     ? (...args: Args) => Promise<Job<FieldToValue<Returns>>>
     : never;
 } & { queue: BullQueue };
 
 export type EndpointServerSignal<Endpoint> = {
-  [K in keyof Endpoint as Endpoint[K] extends ApiInfo<
-    "pubsub",
-    any,
-    any,
-    any,
-    any,
-    any,
-    any
-  >
+  [K in keyof Endpoint as Endpoint[K] extends EndpointInfo<"pubsub", any, any, any, any, any, any>
     ? K
-    : never]: Endpoint[K] extends ApiInfo<
-    "pubsub",
-    any,
-    any,
-    infer Args,
-    any,
-    any,
-    infer Returns,
-    any,
-    any
-  >
+    : never]: Endpoint[K] extends EndpointInfo<"pubsub", any, any, infer Args, any, any, infer Returns, any, any>
     ? (...args: [...Args, data: DocumentModel<FieldToValue<Returns>>]) => void
     : never;
 } & { websocket: Server };

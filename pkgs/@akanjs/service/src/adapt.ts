@@ -8,10 +8,7 @@ import {
 } from "./injectInfo";
 import { Logger } from "@akanjs/common";
 
-export type AdaptorCls<
-  Methods = {},
-  InjectMap extends { [key: string]: InjectInfo<any> } = {},
-> = Cls<
+export type AdaptorCls<Methods = {}, InjectMap extends { [key: string]: InjectInfo<any> } = {}> = Cls<
   Methods &
     ExtractInjectInfoObject<InjectMap> & {
       readonly logger: Logger;
@@ -25,9 +22,7 @@ export function adapt<Name extends string>(name: Name): AdaptorCls;
 
 export function adapt<
   Name extends string,
-  Injection extends InjectBuilder<
-    "use" | "env" | "generate" | "member" | "memory"
-  >,
+  Injection extends InjectBuilder<"use" | "env" | "generate" | "member" | "memory">,
 >(name: Name, injectBuilder: Injection): AdaptorCls<{}, ReturnType<Injection>>;
 
 export function adapt(name: string, injectBuilder?: InjectBuilder) {

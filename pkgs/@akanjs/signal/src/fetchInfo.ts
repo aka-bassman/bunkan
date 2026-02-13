@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
 import { BaseInsight, BaseObject, DataList, dayjs, isGqlScalar } from "@akanjs/base";
 import { capitalize, FetchPolicy, Logger, lowerlize } from "@akanjs/common";
-import { Cnst, constantInfo, ProtoFile, serializeArg } from "@akanjs/constant";
+import { ConstantCls, constantInfo, ProtoFile, serialize } from "@akanjs/constant";
 import type { FilterInstance } from "@akanjs/document";
 
 import { Client } from "./client";
@@ -15,7 +15,9 @@ declare global {
   // Set the type of global.builtFetch to {[key: string]: unknown}
   // This allows dynamic access to any property on builtFetch with unknown type
 
-  var builtFetch: typeof global.fetch & { client: Client } & { [key: string]: (...args: any[]) => Promise<any> };
+  var builtFetch: typeof global.fetch & { client: Client } & {
+    [key: string]: (...args: any[]) => Promise<any>;
+  };
 }
 
 export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: SerializedSignal): Fetch => {
@@ -33,8 +35,8 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
         }
         const message = Object.fromEntries(
           endpoint.args.map((arg, idx) => {
-            const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as Cnst;
-            return [arg.name, serializeArg(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
+            const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as ConstantCls;
+            return [arg.name, serialize(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
           })
         );
         if (fetchPolicy.transport === "udp") {
@@ -62,7 +64,7 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
             if (returnRef.prototype === Date.prototype) return dayjs(data as Date);
             else return data as object;
           } else if (Array.isArray(data)) return data.map((d) => crystalize(d) as object) as object[];
-          else return new (returnRef as Cnst<unknown>)().set(data as object) as object;
+          else return new (returnRef as ConstantCls<unknown>)().set(data as object) as object;
         };
         const handle = (data) => {
           Logger.debug(`socket listened: ${key}: ${dayjs().format("YYYY-MM-DD HH:mm:ss.SSS")}`);
@@ -90,7 +92,7 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
           if (returnRef.prototype === Date.prototype) return dayjs(data as Date);
           else return data as object;
         } else if (Array.isArray(data)) return data.map((d) => crystalize(d) as object) as object[];
-        else return new (returnRef as Cnst)().set(data as object) as object;
+        else return new (returnRef as ConstantCls)().set(data as object) as object;
       };
       const subscribeEvent = function (this: { client: Client }, ...args) {
         const onData = args[endpoint.args.length] as (data: any) => any;
@@ -98,8 +100,8 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
           (args[endpoint.args.length + 1] as FetchPolicy | undefined) ?? ({ crystalize: true } as FetchPolicy);
         const message = Object.fromEntries(
           endpoint.args.map((arg, idx) => {
-            const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as Cnst;
-            return [arg.name, serializeArg(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
+            const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as ConstantCls;
+            return [arg.name, serialize(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
           })
         );
         const handleEvent = (data: { __subscribe__: boolean }) => {
@@ -145,7 +147,7 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
               if (lightenedReturnRef.prototype === Date.prototype) return dayjs(data as Date);
               else return data as object;
             } else if (Array.isArray(data)) return data.map((d) => crystalize(d) as object) as object[];
-            else return new (lightenedReturnRef as Cnst<unknown>)().set(data as object) as object;
+            else return new (lightenedReturnRef as ConstantCls<unknown>)().set(data as object) as object;
           };
           try {
             const res = (
@@ -154,8 +156,8 @@ export const serviceFetchOf = <Fetch = { [key: string]: any }>(signal: Serialize
                 graphql(getGqlStr(returnRef, key, endpoint, lightenedReturnRef, partial)),
                 Object.fromEntries(
                   endpoint.args.map((arg, idx) => {
-                    const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as Cnst;
-                    return [arg.name, serializeArg(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
+                    const argRef = constantInfo.getModelRef(arg.refName, arg.modelType) as ConstantCls;
+                    return [arg.name, serialize(argRef, arg.arrDepth, args[idx], arg.argsOption) ?? null];
                   })
                 ),
                 fetchPolicy
@@ -240,7 +242,10 @@ export const databaseFetchOf = <Fetch = { [key: string]: any }>(
   const util = {
     // TODO: migrate file endpoint to shared
     [names.addModelFiles]: async (files: FileList, id?: string, option?: FetchPolicy) => {
-      const metas = Array.from(files).map((file) => ({ lastModifiedAt: new Date(file.lastModified), size: file.size }));
+      const metas = Array.from(files).map((file) => ({
+        lastModifiedAt: new Date(file.lastModified),
+        size: file.size,
+      }));
       //! will not work properly
       return await (fetchInstance[names.addFiles] as (...args: any[]) => Promise<ProtoFile[]>)(
         files,

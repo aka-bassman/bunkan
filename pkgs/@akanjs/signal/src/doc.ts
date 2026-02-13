@@ -1,5 +1,5 @@
 import { arraiedModel, getNonArrayModel, isGqlScalar, JSON as GqlJSON, type Type } from "@akanjs/base";
-import { Cnst, constantInfo, getScalarExample } from "@akanjs/constant";
+import { ConstantCls, FIELD_META, constantInfo, getScalarExample } from "@akanjs/constant";
 
 import { SerializedArg, SerializedEndpoint } from ".";
 import { SignalType } from "./signalDecorators";
@@ -13,7 +13,7 @@ const getPredefinedResponseExample = (modelRef: Type) => {
   return Reflect.getMetadata(modelRef, ResponseExampleStorage.prototype) as { [key: string]: any } | undefined;
 };
 
-const getResponseExample = (ref: Cnst | Cnst[]) => {
+const getResponseExample = (ref: ConstantCls | ConstantCls[]) => {
   const [modelRef, arrDepth] = getNonArrayModel(ref);
   const existing = getPredefinedRequestExample(modelRef);
   if (existing) return existing;
@@ -21,7 +21,7 @@ const getResponseExample = (ref: Cnst | Cnst[]) => {
   if (isScalar) return arraiedModel(getScalarExample(modelRef), arrDepth);
 
   const example: { [key: string]: any } = {};
-  Object.entries(modelRef.field).forEach(([key, field]) => {
+  Object.entries(modelRef[FIELD_META]).forEach(([key, field]) => {
     if (field.example) example[key] = field.example as unknown;
     else if (field.enum) example[key] = arraiedModel<string>(field.enum.values[0] as string, field.arrDepth);
     else example[key] = getResponseExample(field.modelRef);
@@ -33,14 +33,14 @@ const getResponseExample = (ref: Cnst | Cnst[]) => {
 
 class RequestExampleStorage {}
 
-const getRequestExample = (modelRef: Cnst) => {
+const getRequestExample = (modelRef: ConstantCls) => {
   const existing = getPredefinedRequestExample(modelRef);
   if (existing) return existing;
   const example = {};
   const isScalar = isGqlScalar(modelRef);
   if (isScalar) return getScalarExample(modelRef);
   else {
-    Object.entries(modelRef.field).forEach(([key, field]) => {
+    Object.entries(modelRef[FIELD_META]).forEach(([key, field]) => {
       if (!field.isScalar && field.isClass) example[key] = "ObjectID";
       else
         example[key] = (
@@ -63,7 +63,7 @@ export const getExampleData = (argMetas: SerializedArg[], signalType: SignalType
     argMetas
       .filter((argMeta) => argMeta.type !== "Upload")
       .map((argMeta) => {
-        const argRef = constantInfo.getModelRef(argMeta.refName, argMeta.modelType) as Cnst;
+        const argRef = constantInfo.getModelRef(argMeta.refName, argMeta.modelType) as ConstantCls;
         const example = argMeta.argsOption.example ?? getRequestExample(argRef);
         return [
           argMeta.name,
@@ -79,6 +79,6 @@ export const getExampleData = (argMetas: SerializedArg[], signalType: SignalType
 
 export const makeResponseExample = (gqlMeta: SerializedEndpoint) => {
   const returnRef = constantInfo.getModelRef(gqlMeta.returns.refName, gqlMeta.returns.modelType);
-  const example = getResponseExample(arraiedModel(returnRef, gqlMeta.returns.arrDepth) as Cnst);
+  const example = getResponseExample(arraiedModel(returnRef, gqlMeta.returns.arrDepth) as ConstantCls);
   return example;
 };

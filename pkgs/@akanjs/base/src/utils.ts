@@ -12,13 +12,7 @@ export const arraiedModel = <T = any>(modelRef: T, arrDepth = 0) => {
   for (let i = 0; i < arrDepth; i++) target = [target as T];
   return target;
 };
-export const applyFnToArrayObjects = (
-  arraiedData: any,
-  fn: (arg: any) => any,
-): any[] => {
-  if (Array.isArray(arraiedData))
-    return arraiedData.map(
-      (data) => applyFnToArrayObjects(data, fn) as unknown,
-    );
+export const applyFnToArrayObjects = (arraiedData: any, fn: (arg: any) => any): any[] => {
+  if (Array.isArray(arraiedData)) return arraiedData.map((data) => applyFnToArrayObjects(data, fn) as unknown);
   return fn(arraiedData) as unknown as any[];
 };

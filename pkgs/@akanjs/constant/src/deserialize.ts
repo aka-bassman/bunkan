@@ -2,41 +2,40 @@ import { applyFnToArrayObjects, getNonArrayModel, PrimitiveScalar, type Cls, Pri
 
 import { type ConstantCls, ConstantRegistry, FIELD_META } from ".";
 
-const getSerializeFn = (inputRef: Cls) => {
-  const serializeFn = PrimitiveRegistry.has(inputRef)
-    ? (value: any) => (inputRef as typeof PrimitiveScalar)._serialize(value)
+const getDeserializeFn = (inputRef: Cls) => {
+  const deserializeFn = PrimitiveRegistry.has(inputRef)
+    ? (value: any) => (inputRef as unknown as typeof PrimitiveScalar)._parse(value)
     : (value: any) => value as object;
-  return serializeFn;
+  return deserializeFn;
 };
-const serializeInput = <Input = any>(
+const deserializeInput = <Input = any>(
   value: Input | Input[],
   inputRef: ConstantCls<Input>,
   arrDepth: number
 ): Input | Input[] => {
   if (arrDepth && Array.isArray(value))
-    return value.map((v) => serializeInput(v, inputRef, arrDepth - 1) as Input) as unknown as Input[];
+    return value.map((v) => deserializeInput(v, inputRef, arrDepth - 1) as Input) as unknown as Input[];
   else if (inputRef.prototype === Map.prototype) {
     const [valueRef] = getNonArrayModel(inputRef);
-    const serializeFn = getSerializeFn(valueRef);
+    const deserializeFn = getDeserializeFn(valueRef);
     return Object.fromEntries(
-      [...(value as Map<string, any>).entries()].map(([key, val]) => [key, applyFnToArrayObjects(val, serializeFn)])
+      [...(value as Map<string, any>).entries()].map(([key, val]) => [key, applyFnToArrayObjects(val, deserializeFn)])
     ) as unknown as Input;
   } else if (PrimitiveRegistry.has(inputRef)) {
-    const serializeFn = getSerializeFn(inputRef);
-    return serializeFn(value) as Input;
+    const deserializeFn = getDeserializeFn(inputRef);
+    return deserializeFn(value) as Input;
   }
-  if (!ConstantRegistry.isScalar(inputRef))
-    return value as { id: string } as Input; // id string
+  if (!ConstantRegistry.isScalar(inputRef)) return value as { id: string } as Input;
   else
     return Object.fromEntries(
       Object.entries(inputRef[FIELD_META]).map(([key, field]) => [
         key,
-        serializeInput((value as { [key: string]: any })[key], field.modelRef, field.arrDepth),
+        deserializeInput((value as { [key: string]: any })[key], field.modelRef, field.arrDepth),
       ])
     ) as unknown as Input;
 };
 
-export const serialize = (
+export const deserialize = (
   argRef: ConstantCls,
   arrDepth: number,
   value: any,
@@ -45,5 +44,5 @@ export const serialize = (
   if (nullable && (value === null || value === undefined)) return null;
   else if (!nullable && (value === null || value === undefined))
     throw new Error(`Invalid Value (Nullable) in ${argRef} for value ${value}`);
-  return serializeInput(value, argRef, arrDepth) as object[];
+  return deserializeInput(value, argRef, arrDepth) as object[];
 };

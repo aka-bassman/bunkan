@@ -1,13 +1,10 @@
 import {
   applyFnToArrayObjects,
-  BaseObject,
   type Dayjs,
   dayjs,
-  Float,
   getNonArrayModel,
   type GetStateObject,
   ID,
-  Int,
   type Cls,
   Upload,
   PrimitiveRegistry,
@@ -16,10 +13,13 @@ import {
 import { Logger } from "@akanjs/common";
 
 import {
+  BaseObject,
   ConstantRegistry,
+  FIELD_META,
   type DefaultOf,
   type FieldObject,
   type FieldProps,
+  type ConstantCls,
 } from ".";
 
 type Purified<O> = O extends BaseObject
@@ -31,15 +31,10 @@ type Purified<O> = O extends BaseObject
       : O extends { [key: string]: any }
         ? PurifiedModel<O>
         : O;
-type PurifiedWithObjectToId<
-  T,
-  StateKeys extends keyof GetStateObject<T> = keyof GetStateObject<T>,
-> = {
+type PurifiedWithObjectToId<T, StateKeys extends keyof GetStateObject<T> = keyof GetStateObject<T>> = {
   [K in StateKeys as null extends T[K] ? never : K]: Purified<T[K]>;
 } & {
-  [K in StateKeys as null extends T[K] ? K : never]?:
-    | Purified<T[K]>
-    | undefined;
+  [K in StateKeys as null extends T[K] ? K : never]?: Purified<T[K]> | undefined;
 };
 export type PurifiedModel<T> = T extends Upload[]
   ? FileList
@@ -51,11 +46,10 @@ export type PurifiedModel<T> = T extends Upload[]
         ? Map<K, PurifiedModel<V>>
         : PurifiedWithObjectToId<T>;
 
-export type PurifyFunc<
-  Input,
-  _DefaultInput = DefaultOf<Input>,
-  _PurifiedInput = PurifiedModel<Input>,
-> = (self: _DefaultInput, isChild?: boolean) => _PurifiedInput | null;
+export type PurifyFunc<Input, _DefaultInput = DefaultOf<Input>, _PurifiedInput = PurifiedModel<Input>> = (
+  self: _DefaultInput,
+  isChild?: boolean
+) => _PurifiedInput | null;
 
 const getPurifyFn = (modelRef: Cls): ((value: any) => object) => {
   const [valueRef] = getNonArrayModel(modelRef);
@@ -76,59 +70,28 @@ const purify = (field: FieldProps, key: string, value: any, self: any): any => {
   )
     return null;
   if (field.isArray) {
-    if (!Array.isArray(value))
-      throw new Error(`Invalid Array Value in ${key} for value ${value}`);
+    if (!Array.isArray(value)) throw new Error(`Invalid Array Value in ${key} for value ${value}`);
     if (field.minlength && value.length < field.minlength)
-      throw new Error(
-        `Invalid Array Length (Min) in ${key} for value ${value}`,
-      );
+      throw new Error(`Invalid Array Length (Min) in ${key} for value ${value}`);
     else if (field.maxlength && value.length > field.maxlength)
-      throw new Error(
-        `Invalid Array Length (Max) in ${key} for value ${value}`,
-      );
-    else if (
-      field.optArrDepth === 0 &&
-      field.validate &&
-      !field.validate(value, self)
-    )
-      throw new Error(
-        `Invalid Array Value (Failed to pass validation) in ${key} for value ${value}`,
-      );
-    return value.map(
-      (v) => purify({ ...field, isArray: false }, key, v, v) as object,
-    ) as object;
+      throw new Error(`Invalid Array Length (Max) in ${key} for value ${value}`);
+    else if (field.optArrDepth === 0 && field.validate && !field.validate(value, self))
+      throw new Error(`Invalid Array Value (Failed to pass validation) in ${key} for value ${value}`);
+    return value.map((v) => purify({ ...field, isArray: false }, key, v, v) as object) as object;
   }
   if (field.isMap && field.of) {
     const purifyFn = getPurifyFn(field.of as Cls);
     return Object.fromEntries(
-      [...(value as Map<string, any>).entries()].map(([key, val]) => [
-        key,
-        applyFnToArrayObjects(val, purifyFn),
-      ]),
+      [...(value as Map<string, any>).entries()].map(([key, val]) => [key, applyFnToArrayObjects(val, purifyFn)])
     );
   }
-  if (field.isClass)
-    return makePurify(field.modelRef)(value as object, true) as object;
-  if (
-    field.modelRef === Date &&
-    dayjs(value as Date).isBefore(dayjs(new Date("0000")))
-  )
-    throw new Error(
-      `Invalid Date Value (Default) in ${key} for value ${value}`,
-    );
-  if (
-    [String, ID].includes(
-      field.modelRef as unknown as StringConstructor | typeof ID,
-    ) &&
-    (value === "" || !value)
-  )
-    throw new Error(
-      `Invalid String Value (Default) in ${key} for value ${value}`,
-    );
+  if (field.isClass) return makePurify(field.modelRef)(value as object, true) as object;
+  if (field.modelRef === Date && dayjs(value as Date).isBefore(dayjs(new Date("0000"))))
+    throw new Error(`Invalid Date Value (Default) in ${key} for value ${value}`);
+  if ([String, ID].includes(field.modelRef as unknown as StringConstructor | typeof ID) && (value === "" || !value))
+    throw new Error(`Invalid String Value (Default) in ${key} for value ${value}`);
   if (field.validate && !field.validate(value, self))
-    throw new Error(
-      `Invalid Value (Failed to pass validation) / ${value} in ${key}`,
-    );
+    throw new Error(`Invalid Value (Failed to pass validation) / ${value} in ${key}`);
   if (!field.nullable && !value && value !== 0 && value !== false)
     throw new Error(`Invalid Value (Nullable) in ${key} for value ${value}`);
 
@@ -137,9 +100,7 @@ const purify = (field: FieldProps, key: string, value: any, self: any): any => {
   return purifyFn(value);
 };
 
-export const makePurify = <I>(
-  modelRef: Cls<I, { field: FieldObject }>,
-): PurifyFunc<I> => {
+export const makePurify = <I>(modelRef: ConstantCls<I>): PurifyFunc<I> => {
   const fn = ((self: { [key: string]: any }, isChild?: boolean): any => {
     try {
       if (isChild && !ConstantRegistry.isScalar(modelRef)) {
@@ -148,7 +109,7 @@ export const makePurify = <I>(
         return id;
       }
       const result: { [key: string]: any } = {};
-      Object.entries(modelRef.field).forEach(([key, field]) => {
+      Object.entries(modelRef[FIELD_META]).forEach(([key, field]) => {
         // if (field.fieldType === "hidden") continue;
         const value = self[key] as object;
         result[key] = purify(field.getProps(), key, value, self) as object;

@@ -1,45 +1,35 @@
-import type { MergeAllKeyOfObjects, Cls } from "@akanjs/base";
+import type { MergeAllKeyOfObjects, Cls, UnCls } from "@akanjs/base";
 import type { ConstantModel } from "@akanjs/constant";
 import type { ServiceCls } from "./serve";
+import { lowerlize } from "@akanjs/common";
 
 export class ServiceModule<
-  T extends string = string,
-  Srv extends { [key: string]: ServiceCls } = { [key: string]: ServiceCls },
-  Input = never,
-  Obj = never,
-  Full = never,
-  Light = never,
-  Insight = never,
+  RefName extends string = string,
+  Srv extends ServiceCls = ServiceCls,
+  CnstModel extends ConstantModel<RefName, any, any, any, any, any> = ConstantModel<RefName, any, any, any, any, any>,
+  SrvMap extends { [key: string]: any } = { [K in `${Uncapitalize<RefName>}Service`]: UnCls<Srv> },
 > {
-  refName: T;
+  refName: RefName;
   srv: Srv;
-  cnst: ConstantModel<string, Input, Obj, Full, Light, Insight> | null;
-  constructor(
-    refName: T,
-    srv: Srv,
-    cnst?: ConstantModel<string, Input, Obj, Full, Light, Insight>,
-  ) {
+  cnst: CnstModel | null;
+  srvMap: SrvMap;
+  constructor(refName: RefName, srv: Srv, cnst?: CnstModel | null, srvMap?: { [key: string]: ServiceCls }) {
     this.refName = refName;
     this.srv = srv;
     this.cnst = cnst ?? null;
+    this.srvMap = (srvMap ?? { [`${lowerlize(refName)}Service`]: srv }) as unknown as SrvMap;
   }
-  with<
-    SrvModules extends ServiceModule<string, any, any, any, any, any, any>[],
-  >(...srvs: SrvModules) {
-    this.srv = Object.assign(
+  with<SrvModules extends ServiceModule[]>(...srvs: SrvModules) {
+    return new ServiceModule(
+      this.refName,
       this.srv,
-      ...srvs.map(
-        (srv: ServiceModule<string, any, any, any, any, any, any>) => srv.srv,
-      ),
-    ) as Srv;
-    return this as unknown as ServiceModule<
-      T,
+      this.cnst,
+      Object.assign({}, this.srvMap, ...srvs.map((srv) => srv.srvMap))
+    ) as unknown as ServiceModule<
+      RefName,
       Srv & MergeAllKeyOfObjects<SrvModules, "srv">,
-      Input,
-      Obj,
-      Full,
-      Light,
-      Insight
+      CnstModel,
+      SrvMap & MergeAllKeyOfObjects<SrvModules, "srvMap">
     >;
   }
 }

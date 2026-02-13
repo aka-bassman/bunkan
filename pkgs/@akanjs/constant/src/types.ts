@@ -1,11 +1,4 @@
-import {
-  type BaseObject,
-  type Dayjs,
-  dayjs,
-  enumOf,
-  type GetStateObject,
-  Upload,
-} from "@akanjs/base";
+import { type Dayjs, dayjs, enumOf, type GetStateObject, Upload } from "@akanjs/base";
 import type { QueryFilter, HydratedDocument } from "mongoose";
 
 export type { QueryFilter as QueryOf };
@@ -20,15 +13,10 @@ type ObjectToId<O> = O extends BaseObject
         ? DocumentModel<O>
         : O;
 
-type Docify<
-  T,
-  StateKeys extends keyof GetStateObject<T> = keyof GetStateObject<T>,
-> = {
+type Docify<T, StateKeys extends keyof GetStateObject<T> = keyof GetStateObject<T>> = {
   [K in StateKeys as null extends T[K] ? never : K]: ObjectToId<T[K]>;
 } & {
-  [K in StateKeys as null extends T[K] ? K : never]?:
-    | ObjectToId<Exclude<T[K], null>>
-    | undefined;
+  [K in StateKeys as null extends T[K] ? K : never]?: ObjectToId<Exclude<T[K], null>> | undefined;
 };
 export type DocumentModel<T> = T extends (infer S)[]
   ? DocumentModel<S>[]
@@ -52,6 +40,17 @@ export type GetPlainObject<T, O extends string> = Omit<
   O
 >;
 
+export class BaseObject {
+  declare id: string;
+  declare createdAt: Dayjs;
+  declare updatedAt: Dayjs;
+  declare removedAt: Dayjs | null;
+}
+export class BaseInsight {
+  declare count: number;
+}
+
+// TODO: migrate this to shared
 export interface ProtoFile {
   id: string;
   filename: string;
@@ -70,6 +69,7 @@ export interface ProtoFile {
   lastModifiedAt: Dayjs;
 }
 
+// TODO: migrate this to shared
 export interface ProtoAppInfo {
   appId: string | null;
   appName: string;
@@ -84,6 +84,7 @@ export interface ProtoAppInfo {
   isEmulator: boolean | null;
 }
 
+// TODO: migrate this to shared
 export interface ProtoPatch {
   source: ProtoFile;
   build: ProtoFile;
@@ -97,18 +98,11 @@ export interface TextDoc {
   [key: string]: string | TextDoc;
 }
 
-export type NonFunctionalKeys<T> = keyof T extends (...args: any[]) => any
-  ? never
-  : keyof T;
+export type NonFunctionalKeys<T> = keyof T extends (...args: any[]) => any ? never : keyof T;
 
 export const unsetDate = dayjs(new Date("0000"));
 export const MAX_INT = 2147483647;
 
-export class Responsive extends enumOf("responsive", [
-  "xl",
-  "lg",
-  "md",
-  "sm",
-  "xs",
-] as const) {}
+// TODO: migrate this to @akanjs/client
+export class Responsive extends enumOf("responsive", ["xl", "lg", "md", "sm", "xs"] as const) {}
 export const responsiveWidths = [1200, 992, 768, 576, 0] as const;

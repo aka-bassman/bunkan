@@ -1,23 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import { type MergeAllActionTypes, type PromiseOrObject, type Cls } from "@akanjs/base";
 import {
+  FIELD_META,
   BaseObject,
-  type MergeAllActionTypes,
-  type PromiseOrObject,
-  type Cls,
-} from "@akanjs/base";
-import type {
-  ConstantModel,
-  DocumentModel,
-  FieldObject,
-  QueryOf,
+  type ConstantCls,
+  type ConstantModel,
+  type DocumentModel,
+  type QueryOf,
 } from "@akanjs/constant";
-import type {
-  HydratedDocument,
-  Model as MongooseModel,
-  PipelineStage,
-  ProjectionType,
-  Schema,
-} from "mongoose";
+import type { HydratedDocument, Model as MongooseModel, PipelineStage, ProjectionType, Schema } from "mongoose";
 
 import type { ExtractQuery, ExtractSort, FilterCls, FilterInstance } from ".";
 import type { DatabaseModel } from "./database";
@@ -50,68 +41,30 @@ interface DefaultMdlStats<
   _FilterQuery extends QueryOf<TSchema> = QueryOf<TSchema>,
   _Projection extends ProjectionType<TSchema> = ProjectionType<TSchema>,
 > {
-  pickOneAndWrite: (
-    query: _FilterQuery,
-    rawData: _Partial,
-  ) => Promise<TDocument>;
+  pickOneAndWrite: (query: _FilterQuery, rawData: _Partial) => Promise<TDocument>;
   pickAndWrite: (docId: string, rawData: _Partial) => Promise<TDocument>;
-  pickOne: (
-    query: _FilterQuery,
-    projection?: _Projection,
-  ) => Promise<TDocument>;
-  pickById: (
-    docId: string | undefined,
-    projection?: _Projection,
-  ) => Promise<TDocument>;
-  sample: (
-    query: _FilterQuery,
-    size?: number,
-    aggregations?: PipelineStage[],
-  ) => Promise<TDocument[]>;
-  sampleOne: (
-    query: _FilterQuery,
-    aggregations?: PipelineStage[],
-  ) => Promise<TDocument | null>;
-  preSaveListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  postSaveListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  preCreateListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  postCreateListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  preUpdateListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  postUpdateListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  preRemoveListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
-  postRemoveListenerSet: Set<
-    (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-  >;
+  pickOne: (query: _FilterQuery, projection?: _Projection) => Promise<TDocument>;
+  pickById: (docId: string | undefined, projection?: _Projection) => Promise<TDocument>;
+  sample: (query: _FilterQuery, size?: number, aggregations?: PipelineStage[]) => Promise<TDocument[]>;
+  sampleOne: (query: _FilterQuery, aggregations?: PipelineStage[]) => Promise<TDocument | null>;
+  preSaveListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  postSaveListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  preCreateListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  postCreateListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  preUpdateListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  postUpdateListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  preRemoveListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
+  postRemoveListenerSet: Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>;
   listenPre: (
     eventType: SaveEventType,
-    listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>,
+    listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
   ) => () => void;
   listenPost: (
     eventType: SaveEventType,
-    listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>,
+    listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
   ) => () => void;
 }
-export type Mdl<Doc extends HydratedDocument<any>, Raw> = MongooseModel<
-  Raw,
-  unknown,
-  unknown,
-  unknown,
-  Doc
-> &
+export type Mdl<Doc extends HydratedDocument<any>, Raw> = MongooseModel<Raw, unknown, unknown, unknown, Doc> &
   DefaultMdlStats<Doc, DocumentModel<Raw>>;
 export type SchemaOf<Mdl, Doc> = Schema<null, Mdl, Doc, undefined, null, Mdl>;
 export interface BaseMiddleware {
@@ -140,18 +93,7 @@ const Model = <
   _QueryOfDoc,
   _Query = ExtractQuery<Filter>,
   _Sort = ExtractSort<Filter>,
-  _DatabaseModel = DatabaseModel<
-    T,
-    _DocInput,
-    Doc,
-    Full,
-    Insight,
-    Filter,
-    _CapitalizedT,
-    _QueryOfDoc,
-    _Query,
-    _Sort
-  >,
+  _DatabaseModel = DatabaseModel<T, _DocInput, Doc, Full, Insight, Filter, _CapitalizedT, _QueryOfDoc, _Query, _Sort>,
   _LoaderBuilder extends LoaderBuilder<_Doc> = LoaderBuilder<_Doc>,
 >(
   docRef: Cls<Doc>,
@@ -177,8 +119,7 @@ const Model = <
   loaderBuilder: _LoaderBuilder,
   ...addMdls: [...AddDbModels]
 ): ModelCls<
-  MergeAllActionTypes<AddDbModels, keyof _DatabaseModel & string> &
-    _DatabaseModel,
+  MergeAllActionTypes<AddDbModels, keyof _DatabaseModel & string> & _DatabaseModel,
   ReturnType<_LoaderBuilder>
 > => {
   const loaderInfoMap = loaderBuilder(makeLoaderBuilder());
@@ -191,20 +132,13 @@ export const into = Model;
 
 export const by = <
   Model,
-  AddDbModels extends Cls[],
+  AddDbModels extends ConstantCls[],
   _DocModel = Model extends BaseObject ? Doc<Model> : DocumentModel<Model>,
 >(
-  modelRef: Cls<Model, { field: FieldObject }>,
+  modelRef: ConstantCls<Model>,
   ...addRefs: AddDbModels
-): Cls<
-  MergeAllActionTypes<AddDbModels, keyof _DocModel & string> & _DocModel
-> => {
-  Object.assign(
-    modelRef.field,
-    ...addRefs.map(
-      (addRef) => (addRef as Cls<Model, { field: FieldObject }>).field,
-    ),
-  );
+): Cls<MergeAllActionTypes<AddDbModels, keyof _DocModel & string> & _DocModel> => {
+  Object.assign(modelRef[FIELD_META], ...addRefs.map((addRef) => addRef[FIELD_META]));
   return modelRef as any;
 };
 

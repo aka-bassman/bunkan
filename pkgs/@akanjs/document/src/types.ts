@@ -3,14 +3,10 @@ import type { Document, ProjectionType } from "mongoose";
 import type { FilterInfo } from ".";
 
 export type DataInputOf<Input, Obj> = {
-  [K in keyof Input as K extends K ? K : never]: Input[K] extends any[]
-    ? Input[K] | undefined
-    : Input[K];
+  [K in keyof Input as K extends K ? K : never]: Input[K] extends any[] ? Input[K] | undefined : Input[K];
 } & Partial<Obj>;
 
-export type GetDocObject<D> = GetStateObject<
-  Omit<D, Exclude<keyof Document, "id"> | "__v">
->;
+export type GetDocObject<D> = GetStateObject<Omit<D, Exclude<keyof Document, "id"> | "__v">>;
 
 // export interface ConstantFilterQueryMeta<
 //   Args extends any[] = any[],
@@ -31,13 +27,7 @@ export interface FilterKeyProps {
 export interface FilterArgProps {
   nullable?: boolean;
   ref?: string;
-  default?:
-    | string
-    | number
-    | boolean
-    | object
-    | null
-    | (() => string | number | boolean | object | null);
+  default?: string | number | boolean | object | null | (() => string | number | boolean | object | null);
   renderOption?: (value: any) => string;
   enum?: EnumInstance;
 }

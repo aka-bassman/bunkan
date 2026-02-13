@@ -1,5 +1,5 @@
 import type { Cls } from "@akanjs/base";
-import type { Cnst } from "@akanjs/constant";
+import type { ConstantCls } from "@akanjs/constant";
 import type { HydratedDocument } from "mongoose";
 
 import type { BaseMiddleware } from "./dbDecorators";
@@ -27,11 +27,10 @@ export class DatabaseRegistry {
   static #modelRefNameMap = new Map<Cls, string>();
   static getRefName<AllowEmpty extends boolean = false>(
     modelRef: Cls,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
   ): AllowEmpty extends true ? string | undefined : string {
     const refName = this.#modelRefNameMap.get(modelRef);
-    if (!refName && !allowEmpty)
-      throw new Error(`No ref name for modelRef: ${modelRef}`);
+    if (!refName && !allowEmpty) throw new Error(`No ref name for modelRef: ${modelRef}`);
     return refName as AllowEmpty extends true ? string | undefined : string;
   }
   static isInput(modelRef: Cls) {
@@ -51,13 +50,7 @@ export class DatabaseRegistry {
   }
   static setDatabase(
     refName: string,
-    {
-      Input,
-      Doc,
-      Model,
-      Middleware,
-      Filter,
-    }: Database<any, any, any, any, any, any, any, any>,
+    { Input, Doc, Model, Middleware, Filter }: Database<any, any, any, any, any, any, any, any>
   ) {
     if (!this.#database.has(refName))
       this.#database.set(refName, {
@@ -73,16 +66,11 @@ export class DatabaseRegistry {
   }
   static getDatabase<AllowEmpty extends boolean = false>(
     refName: string,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
-  ): AllowEmpty extends true
-    ? DatabaseDocumentModelInfo | undefined
-    : DatabaseDocumentModelInfo {
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
+  ): AllowEmpty extends true ? DatabaseDocumentModelInfo | undefined : DatabaseDocumentModelInfo {
     const info = this.#database.get(refName);
-    if (!info && !allowEmpty)
-      throw new Error(`No database document model info for ${refName}`);
-    return info as AllowEmpty extends true
-      ? DatabaseDocumentModelInfo | undefined
-      : DatabaseDocumentModelInfo;
+    if (!info && !allowEmpty) throw new Error(`No database document model info for ${refName}`);
+    return info as AllowEmpty extends true ? DatabaseDocumentModelInfo | undefined : DatabaseDocumentModelInfo;
   }
   static setScalar(refName: string, Model: Cls) {
     if (this.#scalar.has(refName)) return;
@@ -91,11 +79,10 @@ export class DatabaseRegistry {
   }
   static getScalar<AllowEmpty extends boolean = false>(
     refName: string,
-    { allowEmpty }: { allowEmpty?: AllowEmpty } = {},
+    { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
   ): AllowEmpty extends true ? Cls | undefined : Cls {
     const model = this.#scalar.get(refName);
-    if (!model && !allowEmpty)
-      throw new Error(`No scalar model for ${refName}`);
+    if (!model && !allowEmpty) throw new Error(`No scalar model for ${refName}`);
     return model as AllowEmpty extends true ? Cls | undefined : Cls;
   }
   // TODO: Serialize filter query map to support admin page
@@ -122,9 +109,9 @@ export class DatabaseRegistry {
     Doc: Cls<Doc>,
     Model: ModelCls<Model>,
     Middleware: Cls<Middleware>,
-    Obj: Cnst<Obj>,
-    Insight: Cnst<Insight>,
-    Filter: FilterCls<Filter>,
+    Obj: ConstantCls<Obj>,
+    Insight: ConstantCls<Insight>,
+    Filter: FilterCls<Filter>
   ): Database<T, Input, Doc, Model, Middleware, Obj, Insight, Filter> {
     const dbInfo = {
       refName,
@@ -140,10 +127,7 @@ export class DatabaseRegistry {
     return dbInfo;
   }
 
-  static buildScalar<T extends string, Model>(
-    refName: T,
-    Model: Cls<Model>,
-  ): { refName: T; Model: Cls<Model> } {
+  static buildScalar<T extends string, Model>(refName: T, Model: Cls<Model>): { refName: T; Model: Cls<Model> } {
     const scalarInfo = { refName, Model };
     this.setScalar(refName, Model);
     return scalarInfo;
@@ -165,7 +149,7 @@ export interface Database<
   Doc: Cls<Doc>;
   Model: ModelCls<Model>;
   Middleware: Cls<Middleware>;
-  Obj: Cnst<Obj>;
-  Insight: Cnst<Insight>;
+  Obj: ConstantCls<Obj>;
+  Insight: ConstantCls<Insight>;
   Filter: FilterCls<Filter>;
 }

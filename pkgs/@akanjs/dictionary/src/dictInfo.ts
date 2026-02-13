@@ -4,18 +4,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { BaseInsight, BaseObject, type GetStateObject } from "@akanjs/base";
 import { capitalize } from "@akanjs/common";
-import {
-  BaseFilterQueryKey,
-  BaseFilterSortKey,
-  FilterInfo,
-  FilterInstance,
-} from "@akanjs/document";
-import { ApiInfo, SliceInfo } from "@akanjs/signal";
+import { BaseFilterQueryKey, BaseFilterSortKey, FilterInfo, FilterInstance } from "@akanjs/document";
+import { EndpointInfo, SliceInfo } from "@akanjs/signal";
 
 class FieldTranslation<Languages extends [string, ...string[]]> {
-  static translate = <Languages extends [string, ...string[]]>(
-    trans: Languages,
-  ) => new FieldTranslation<Languages>(trans);
+  static translate = <Languages extends [string, ...string[]]>(trans: Languages) =>
+    new FieldTranslation<Languages>(trans);
   trans: Languages;
   descTrans?: Languages;
   constructor(trans: Languages) {
@@ -27,10 +21,7 @@ class FieldTranslation<Languages extends [string, ...string[]]> {
   }
 }
 
-class FunctionTranslation<
-  Languages extends [string, ...string[]],
-  ArgName extends string = never,
-> {
+class FunctionTranslation<Languages extends [string, ...string[]], ArgName extends string = never> {
   trans: Languages;
   descTrans?: Languages;
   argTrans: { [key in ArgName]: FieldTranslation<Languages> } = {} as {
@@ -44,20 +35,13 @@ class FunctionTranslation<
     return this;
   }
   arg<TransMap extends { [key: string]: FieldTranslation<Languages> }>(
-    translate: (
-      t: (trans: Languages) => FieldTranslation<Languages>,
-    ) => TransMap,
+    translate: (t: (trans: Languages) => FieldTranslation<Languages>) => TransMap
   ) {
     Object.assign(this.argTrans, translate(FieldTranslation.translate));
-    return this as unknown as FunctionTranslation<
-      Languages,
-      keyof TransMap & string
-    >;
+    return this as unknown as FunctionTranslation<Languages, keyof TransMap & string>;
   }
 }
-const fn = <Languages extends [string, ...string[]] = [string]>(
-  trans: Languages,
-) => new FunctionTranslation(trans);
+const fn = <Languages extends [string, ...string[]] = [string]>(trans: Languages) => new FunctionTranslation(trans);
 
 type BaseModelCrudGetSignalTranslation<
   T extends string,
@@ -70,15 +54,11 @@ type BaseModelCrudGetSignalTranslation<
 } & {
   [K in `create${_CapitalizedT}`]: FunctionTranslation<Languages, "data">;
 } & {
-  [K in `update${_CapitalizedT}`]: FunctionTranslation<
-    Languages,
-    `${T}Id` | "data"
-  >;
+  [K in `update${_CapitalizedT}`]: FunctionTranslation<Languages, `${T}Id` | "data">;
 } & {
   [K in `remove${_CapitalizedT}`]: FunctionTranslation<Languages, `${T}Id`>;
 };
-type GetBaseSignalKey<T extends string> =
-  keyof BaseModelCrudGetSignalTranslation<T>;
+type GetBaseSignalKey<T extends string> = keyof BaseModelCrudGetSignalTranslation<T>;
 
 export class ModelDictInfo<
   Languages extends [string, ...string[]] = [string],
@@ -96,30 +76,18 @@ export class ModelDictInfo<
   static baseModelDictionary: {
     [key in keyof BaseObject]: FieldTranslation<[string, string]>;
   } = {
-    id: FieldTranslation.translate(["ID", "아이디"]).desc([
-      "Unique ID value",
-      "유니크한 아이디값",
-    ]),
-    createdAt: FieldTranslation.translate(["CreatedAt", "생성일"]).desc([
-      "Data created time",
-      "데이터 생성 시각",
-    ]),
+    id: FieldTranslation.translate(["ID", "아이디"]).desc(["Unique ID value", "유니크한 아이디값"]),
+    createdAt: FieldTranslation.translate(["CreatedAt", "생성일"]).desc(["Data created time", "데이터 생성 시각"]),
     updatedAt: FieldTranslation.translate(["UpdatedAt", "수정일"]).desc([
       "Data updated time",
       "데이터 마지막 수정 시각",
     ]),
-    removedAt: FieldTranslation.translate(["RemovedAt", "삭제일"]).desc([
-      "Data removed time",
-      "데이터 삭제 시각",
-    ]),
+    removedAt: FieldTranslation.translate(["RemovedAt", "삭제일"]).desc(["Data removed time", "데이터 삭제 시각"]),
   };
   static baseInsightDictionary: {
     [key in keyof BaseInsight]: FieldTranslation<[string, string]>;
   } = {
-    count: FieldTranslation.translate(["Count", "개수"]).desc([
-      "Total number of items",
-      "총 아이템 개수",
-    ]),
+    count: FieldTranslation.translate(["Count", "개수"]).desc(["Total number of items", "총 아이템 개수"]),
   };
   static baseQueryDictionary: {
     [key in BaseFilterQueryKey]: FieldTranslation<[string, string]>;
@@ -129,68 +97,36 @@ export class ModelDictInfo<
   static baseSortDictionary: {
     [key in BaseFilterSortKey]: FieldTranslation<[string, string]>;
   } = {
-    latest: FieldTranslation.translate(["Latest", "최신순"]).desc([
-      "Latest",
-      "최신순",
-    ]),
-    oldest: FieldTranslation.translate(["Oldest", "오래된순"]).desc([
-      "Oldest",
-      "오래된순",
-    ]),
+    latest: FieldTranslation.translate(["Latest", "최신순"]).desc(["Latest", "최신순"]),
+    oldest: FieldTranslation.translate(["Oldest", "오래된순"]).desc(["Oldest", "오래된순"]),
   };
-  static getBaseSignalDictionary<T extends string>(
-    refName: T,
-  ): BaseModelCrudGetSignalTranslation<T, [string, string]> {
+  static getBaseSignalDictionary<T extends string>(refName: T): BaseModelCrudGetSignalTranslation<T, [string, string]> {
     return {
       [refName]: fn([`Get ${refName}`, `${refName} 조회`])
         .desc([`Get ${refName}`, `${refName} 조회`])
         .arg((t) => ({
-          [`${refName}Id`]: t(["Id", "아이디"]).desc([
-            `Id of ${refName}`,
-            `${refName} 아이디`,
-          ]),
+          [`${refName}Id`]: t(["Id", "아이디"]).desc([`Id of ${refName}`, `${refName} 아이디`]),
         })),
-      [`light${refName}`]: fn([
-        `Get light version of ${refName}`,
-        `${refName} 경량화 버전 조회`,
-      ])
-        .desc([
-          `Get light version of ${refName}`,
-          `${refName} 경량화 버전 조회`,
-        ])
+      [`light${refName}`]: fn([`Get light version of ${refName}`, `${refName} 경량화 버전 조회`])
+        .desc([`Get light version of ${refName}`, `${refName} 경량화 버전 조회`])
         .arg((t) => ({
-          [`${refName}Id`]: t(["Id", "아이디"]).desc([
-            `Id of ${refName}`,
-            `${refName} 아이디`,
-          ]),
+          [`${refName}Id`]: t(["Id", "아이디"]).desc([`Id of ${refName}`, `${refName} 아이디`]),
         })),
       [`create${refName}`]: fn([`Create ${refName}`, `${refName} 생성`])
         .desc([`Create ${refName}`, `${refName} 생성`])
         .arg((t) => ({
-          data: t(["Data", "데이터"]).desc([
-            `Data of ${refName}`,
-            `${refName} 데이터`,
-          ]),
+          data: t(["Data", "데이터"]).desc([`Data of ${refName}`, `${refName} 데이터`]),
         })),
       [`update${refName}`]: fn([`Update ${refName}`, `${refName} 수정`])
         .desc([`Update ${refName}`, `${refName} 수정`])
         .arg((t) => ({
-          [`${refName}Id`]: t(["Id", "아이디"]).desc([
-            `Id of ${refName}`,
-            `${refName} 아이디`,
-          ]),
-          data: t(["Data", "데이터"]).desc([
-            `Data of ${refName}`,
-            `${refName} 데이터`,
-          ]),
+          [`${refName}Id`]: t(["Id", "아이디"]).desc([`Id of ${refName}`, `${refName} 아이디`]),
+          data: t(["Data", "데이터"]).desc([`Data of ${refName}`, `${refName} 데이터`]),
         })),
       [`remove${refName}`]: fn([`Remove ${refName}`, `${refName} 삭제`])
         .desc([`Remove ${refName}`, `${refName} 삭제`])
         .arg((t) => ({
-          [`${refName}Id`]: t(["Id", "아이디"]).desc([
-            `Id of ${refName}`,
-            `${refName} 아이디`,
-          ]),
+          [`${refName}Id`]: t(["Id", "아이디"]).desc([`Id of ${refName}`, `${refName} 아이디`]),
         })),
     } as unknown as BaseModelCrudGetSignalTranslation<T, [string, string]>;
   }
@@ -209,10 +145,9 @@ export class ModelDictInfo<
   modelDictionary: { [K in ModelKey]: FieldTranslation<Languages> } = {} as {
     [K in ModelKey]: FieldTranslation<Languages>;
   };
-  insightDictionary: { [K in InsightKey]: FieldTranslation<Languages> } =
-    {} as {
-      [K in InsightKey]: FieldTranslation<Languages>;
-    };
+  insightDictionary: { [K in InsightKey]: FieldTranslation<Languages> } = {} as {
+    [K in InsightKey]: FieldTranslation<Languages>;
+  };
   queryDictionary: { [K in QueryKey]: FunctionTranslation<Languages> } = {} as {
     [K in QueryKey]: FunctionTranslation<Languages>;
   };
@@ -232,10 +167,9 @@ export class ModelDictInfo<
   sliceDictionary: { [K in SliceKey]: FunctionTranslation<Languages> } = {} as {
     [K in SliceKey]: FunctionTranslation<Languages>;
   };
-  endpointDictionary: { [K in EndpointKey]: FunctionTranslation<Languages> } =
-    {} as {
-      [K in EndpointKey]: FunctionTranslation<Languages>;
-    };
+  endpointDictionary: { [K in EndpointKey]: FunctionTranslation<Languages> } = {} as {
+    [K in EndpointKey]: FunctionTranslation<Languages>;
+  };
   errorDictionary: { [K in ErrorKey]: Languages } = {} as {
     [K in ErrorKey]: Languages;
   };
@@ -245,26 +179,19 @@ export class ModelDictInfo<
   constructor(languages: Languages) {
     this.languages = languages;
   }
-  of(
-    translate: (
-      t: (trans: Languages) => FieldTranslation<Languages>,
-    ) => FieldTranslation<Languages>,
-  ) {
+  of(translate: (t: (trans: Languages) => FieldTranslation<Languages>) => FieldTranslation<Languages>) {
     this.modelTranslation = translate(FieldTranslation.translate);
     return this;
   }
   model<Model extends { [key: string]: any }>(
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
-      [K in Exclude<
-        keyof GetStateObject<Model>,
-        ModelKey
-      >]: FieldTranslation<Languages>;
-    },
+      [K in Exclude<keyof GetStateObject<Model>, ModelKey>]: FieldTranslation<Languages>;
+    }
   ) {
     Object.assign(
       this.modelDictionary,
       translate(FieldTranslation.translate),
-      ModelDictInfo.baseModelDictionary,
+      ModelDictInfo.baseModelDictionary
     ) as unknown as { [K in ModelKey]: FieldTranslation<Languages> };
     return this as unknown as ModelDictInfo<
       Languages,
@@ -282,16 +209,13 @@ export class ModelDictInfo<
   }
   insight<Insight extends { [key: string]: any }>(
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
-      [K in Exclude<
-        keyof GetStateObject<Insight>,
-        InsightKey
-      >]: FieldTranslation<Languages>;
-    },
+      [K in Exclude<keyof GetStateObject<Insight>, InsightKey>]: FieldTranslation<Languages>;
+    }
   ) {
     Object.assign(
       this.insightDictionary,
       translate(FieldTranslation.translate),
-      ModelDictInfo.baseInsightDictionary,
+      ModelDictInfo.baseInsightDictionary
     ) as unknown as { [K in InsightKey]: FieldTranslation<Languages> };
     return this as unknown as ModelDictInfo<
       Languages,
@@ -309,24 +233,15 @@ export class ModelDictInfo<
   }
   query<Filter extends FilterInstance>(
     translate: (fn: (trans: Languages) => FunctionTranslation<Languages>) => {
-      [K in Exclude<
-        keyof Filter["query"],
-        QueryKey
-      >]: Filter["query"][K] extends FilterInfo<infer ArgNames, any>
+      [K in Exclude<keyof Filter["query"], QueryKey>]: Filter["query"][K] extends FilterInfo<infer ArgNames, any>
         ? FunctionTranslation<Languages, ArgNames[number]>
         : never;
-    },
+    }
   ) {
-    Object.assign(
-      this.queryDictionary,
-      translate(fn),
-      ModelDictInfo.baseQueryDictionary,
-    ) as unknown as {
+    Object.assign(this.queryDictionary, translate(fn), ModelDictInfo.baseQueryDictionary) as unknown as {
       [K in keyof Filter["query"]]: FunctionTranslation<
         Languages,
-        Filter["query"][K] extends FilterInfo<infer ArgNames, any>
-          ? ArgNames[number]
-          : never
+        Filter["query"][K] extends FilterInfo<infer ArgNames, any> ? ArgNames[number] : never
       >;
     };
     return this as unknown as ModelDictInfo<
@@ -345,16 +260,13 @@ export class ModelDictInfo<
   }
   sort<Filter extends FilterInstance>(
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
-      [K in Exclude<
-        keyof Filter["sort"],
-        SortKey
-      >]: FieldTranslation<Languages>;
-    },
+      [K in Exclude<keyof Filter["sort"], SortKey>]: FieldTranslation<Languages>;
+    }
   ) {
     Object.assign(
       this.sortDictionary,
       translate(FieldTranslation.translate),
-      ModelDictInfo.baseSortDictionary,
+      ModelDictInfo.baseSortDictionary
     ) as unknown as { [K in SortKey]: FieldTranslation<Languages> };
     return this as unknown as ModelDictInfo<
       Languages,
@@ -375,7 +287,7 @@ export class ModelDictInfo<
     enumName: Enum["refName"],
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
       [K in Enum["value"]]: FieldTranslation<Languages>;
-    },
+    }
   ) {
     Object.assign(this.enumDictionary, {
       [enumName]: translate(FieldTranslation.translate),
@@ -409,13 +321,9 @@ export class ModelDictInfo<
       >
         ? FunctionTranslation<Languages, ArgNames[number]>
         : never;
-    },
+    }
   ) {
-    Object.assign(
-      this.sliceDictionary,
-      translate(fn),
-      ModelDictInfo.baseSliceDictionary,
-    ) as unknown as {
+    Object.assign(this.sliceDictionary, translate(fn), ModelDictInfo.baseSliceDictionary) as unknown as {
       [K in keyof Slice]: FunctionTranslation<Languages>;
     };
     return this as unknown as ModelDictInfo<
@@ -434,7 +342,7 @@ export class ModelDictInfo<
   }
   endpoint<Endpoint>(
     translate: (fn: (trans: Languages) => FunctionTranslation<Languages>) => {
-      [K in Exclude<keyof Endpoint, EndpointKey>]: Endpoint[K] extends ApiInfo<
+      [K in Exclude<keyof Endpoint, EndpointKey>]: Endpoint[K] extends EndpointInfo<
         any,
         any,
         infer ArgNames,
@@ -447,7 +355,7 @@ export class ModelDictInfo<
       >
         ? FunctionTranslation<Languages, ArgNames[number]>
         : never;
-    },
+    }
   ) {
     Object.assign(this.endpointDictionary, translate(fn)) as unknown as {
       [K in EndpointKey]: FunctionTranslation<Languages>;
@@ -466,9 +374,7 @@ export class ModelDictInfo<
       EtcKey
     >;
   }
-  error<ErrorDict extends { [key: string]: Languages }>(
-    errorDictionary: ErrorDict,
-  ) {
+  error<ErrorDict extends { [key: string]: Languages }>(errorDictionary: ErrorDict) {
     Object.assign(this.errorDictionary, errorDictionary);
     return this as unknown as ModelDictInfo<
       Languages,
@@ -484,9 +390,7 @@ export class ModelDictInfo<
       EtcKey
     >;
   }
-  translate<EtcDict extends { [key: string]: Languages }>(
-    etcDictionary: EtcDict,
-  ) {
+  translate<EtcDict extends { [key: string]: Languages }>(etcDictionary: EtcDict) {
     Object.assign(this.etcDictionary, etcDictionary);
     return this as unknown as ModelDictInfo<
       Languages,
@@ -503,10 +407,7 @@ export class ModelDictInfo<
     >;
   }
   _applyBaseSignal<T extends string>(refName: T) {
-    Object.assign(
-      this.baseSignalDictionary,
-      ModelDictInfo.getBaseSignalDictionary(refName),
-    );
+    Object.assign(this.baseSignalDictionary, ModelDictInfo.getBaseSignalDictionary(refName));
     return this as unknown as ModelDictInfo<
       Languages,
       ModelKey,
@@ -527,12 +428,8 @@ export class ModelDictInfo<
       rootDict[language][refName] ??= {};
     });
     if (this.modelTranslation) {
-      this.modelTranslation.trans.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName].modelName = { t }),
-      );
-      this.modelTranslation.descTrans?.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName].modelDesc = { t }),
-      );
+      this.modelTranslation.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].modelName = { t }));
+      this.modelTranslation.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].modelDesc = { t }));
     }
     this.#registerInsightToRoot(refName, rootDict);
     this.#registerQueryToRoot(refName, rootDict);
@@ -546,267 +443,166 @@ export class ModelDictInfo<
     this.#registerEtcToRoot(refName, rootDict);
   }
   #registerModelToRoot(refName: string, rootDict: { [key: string]: object }) {
-    Object.entries(
-      this.modelDictionary as { [key: string]: FieldTranslation<Languages> },
-    ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName][key] = { t }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName][key].desc = { t }),
-      );
+    Object.entries(this.modelDictionary as { [key: string]: FieldTranslation<Languages> }).forEach(([key, value]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName][key] = { t }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName][key].desc = { t }));
     });
   }
   #registerInsightToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].insight ??= {}),
-    );
-    Object.entries(
-      this.insightDictionary as { [key: string]: FieldTranslation<Languages> },
-    ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].insight[key] = { t }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].insight[key].desc = { t }),
-      );
+    this.languages.forEach((language) => (rootDict[language][refName].insight ??= {}));
+    Object.entries(this.insightDictionary as { [key: string]: FieldTranslation<Languages> }).forEach(([key, value]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].insight[key] = { t }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].insight[key].desc = { t }));
     });
   }
   #registerQueryToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].query ??= {}),
+    this.languages.forEach((language) => (rootDict[language][refName].query ??= {}));
+    Object.entries(this.queryDictionary as { [key: string]: FunctionTranslation<Languages> }).forEach(
+      ([key, value]) => {
+        value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].query[key] = { t, arg: {} }));
+        value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].query[key].desc = { t }));
+        Object.entries(value.argTrans as { [key: string]: FieldTranslation<Languages> }).forEach(
+          ([argKey, argTrans]) => {
+            argTrans.trans.forEach(
+              (t, idx) =>
+                (rootDict[this.languages[idx]][refName].query[key].arg[argKey] = {
+                  t,
+                })
+            );
+            argTrans.descTrans?.forEach(
+              (t, idx) => (rootDict[this.languages[idx]][refName].query[key].arg[argKey].desc = { t })
+            );
+          }
+        );
+      }
     );
-    Object.entries(
-      this.queryDictionary as { [key: string]: FunctionTranslation<Languages> },
-    ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].query[key] = { t, arg: {} }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].query[key].desc = { t }),
-      );
-      Object.entries(
-        value.argTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([argKey, argTrans]) => {
-        argTrans.trans.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].query[key].arg[argKey] = {
-              t,
-            }),
-        );
-        argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].query[key].arg[
-              argKey
-            ].desc = { t }),
-        );
-      });
-    });
   }
   #registerSortToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].sort ??= {}),
-    );
-    Object.entries(
-      this.sortDictionary as { [key: string]: FieldTranslation<Languages> },
-    ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName].sort[key] = { t }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].sort[key].desc = { t }),
-      );
+    this.languages.forEach((language) => (rootDict[language][refName].sort ??= {}));
+    Object.entries(this.sortDictionary as { [key: string]: FieldTranslation<Languages> }).forEach(([key, value]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].sort[key] = { t }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].sort[key].desc = { t }));
     });
   }
   #registerEnumToRoot(rootDict: { [key: string]: object }) {
     Object.entries(
       this.enumDictionary as {
         [key: string]: { [key: string]: FieldTranslation<Languages> };
-      },
+      }
     ).forEach(([refName, enumTrans]) => {
-      this.languages.forEach(
-        (language) => (rootDict[language][refName] ??= {}),
-      );
-      Object.entries(
-        enumTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([enumKey, enumValue]) => {
-        enumValue.trans.forEach(
-          (t, idx) => (rootDict[this.languages[idx]][refName][enumKey] = { t }),
-        );
-        enumValue.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName][enumKey].desc = { t }),
-        );
+      this.languages.forEach((language) => (rootDict[language][refName] ??= {}));
+      Object.entries(enumTrans as { [key: string]: FieldTranslation<Languages> }).forEach(([enumKey, enumValue]) => {
+        enumValue.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName][enumKey] = { t }));
+        enumValue.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName][enumKey].desc = { t }));
       });
     });
   }
-  #registerBaseSignalToRoot(
-    refName: string,
-    rootDict: { [key: string]: object },
-  ) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].signal ??= {}),
-    );
+  #registerBaseSignalToRoot(refName: string, rootDict: { [key: string]: object }) {
+    this.languages.forEach((language) => (rootDict[language][refName].signal ??= {}));
     Object.entries(
       this.baseSignalDictionary as {
         [key: string]: FunctionTranslation<Languages>;
-      },
+      }
     ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key].desc = { t }),
-      );
-      Object.entries(
-        value.argTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([argKey, argTrans]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key].desc = { t }));
+      Object.entries(value.argTrans as { [key: string]: FieldTranslation<Languages> }).forEach(([argKey, argTrans]) => {
         argTrans.trans.forEach(
           (t, idx) =>
             (rootDict[this.languages[idx]][refName].signal[key].arg[argKey] = {
               t,
-            }),
+            })
         );
         argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[key].arg[
-              argKey
-            ].desc = { t }),
+          (t, idx) => (rootDict[this.languages[idx]][refName].signal[key].arg[argKey].desc = { t })
         );
       });
     });
   }
   #registerSliceToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].signal ??= {}),
+    this.languages.forEach((language) => (rootDict[language][refName].signal ??= {}));
+    Object.entries(this.sliceDictionary as { [key: string]: FunctionTranslation<Languages> }).forEach(
+      ([sliceKey, sliceTrans]) => {
+        const listKey = `${refName}List${capitalize(sliceKey)}`;
+        const insightKey = `${refName}Insight${capitalize(sliceKey)}`;
+        sliceTrans.trans.forEach(
+          (t, idx) =>
+            (rootDict[this.languages[idx]][refName].signal[listKey] = {
+              t: `Slice List - ${t}`,
+              arg: {},
+            })
+        );
+        sliceTrans.descTrans?.forEach(
+          (t, idx) =>
+            (rootDict[this.languages[idx]][refName].signal[listKey].desc = {
+              t: `Slice List - ${t}`,
+            })
+        );
+        sliceTrans.trans.forEach(
+          (t, idx) =>
+            (rootDict[this.languages[idx]][refName].signal[insightKey] = {
+              t: `Slice Insight - ${t}`,
+              arg: {},
+            })
+        );
+        sliceTrans.descTrans?.forEach(
+          (t, idx) =>
+            (rootDict[this.languages[idx]][refName].signal[insightKey].desc = {
+              t: `Slice Insight - ${t}`,
+            })
+        );
+        Object.entries(sliceTrans.argTrans as { [key: string]: FieldTranslation<Languages> }).forEach(
+          ([argKey, argTrans]) => {
+            argTrans.trans.forEach(
+              (t, idx) => (rootDict[this.languages[idx]][refName].signal[listKey].arg[argKey] = { t })
+            );
+            argTrans.descTrans?.forEach(
+              (t, idx) => (rootDict[this.languages[idx]][refName].signal[listKey].arg[argKey].desc = { t })
+            );
+            ["skip", "limit", "sort"].forEach((argKey) => {
+              argTrans.trans.forEach(
+                (t, idx) => (rootDict[this.languages[idx]][refName].signal[listKey].arg[argKey] = { t: argKey })
+              );
+              argTrans.descTrans?.forEach(
+                (t, idx) => (rootDict[this.languages[idx]][refName].signal[listKey].arg[argKey].desc = { t: argKey })
+              );
+            });
+            argTrans.trans.forEach(
+              (t, idx) => (rootDict[this.languages[idx]][refName].signal[insightKey].arg[argKey] = { t })
+            );
+            argTrans.descTrans?.forEach(
+              (t, idx) => (rootDict[this.languages[idx]][refName].signal[insightKey].arg[argKey].desc = { t })
+            );
+          }
+        );
+      }
     );
-    Object.entries(
-      this.sliceDictionary as { [key: string]: FunctionTranslation<Languages> },
-    ).forEach(([sliceKey, sliceTrans]) => {
-      const listKey = `${refName}List${capitalize(sliceKey)}`;
-      const insightKey = `${refName}Insight${capitalize(sliceKey)}`;
-      sliceTrans.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[listKey] = {
-            t: `Slice List - ${t}`,
-            arg: {},
-          }),
-      );
-      sliceTrans.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[listKey].desc = {
-            t: `Slice List - ${t}`,
-          }),
-      );
-      sliceTrans.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[insightKey] = {
-            t: `Slice Insight - ${t}`,
-            arg: {},
-          }),
-      );
-      sliceTrans.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[insightKey].desc = {
-            t: `Slice Insight - ${t}`,
-          }),
-      );
-      Object.entries(
-        sliceTrans.argTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([argKey, argTrans]) => {
-        argTrans.trans.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[listKey].arg[
-              argKey
-            ] = { t }),
-        );
-        argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[listKey].arg[
-              argKey
-            ].desc = { t }),
-        );
-        ["skip", "limit", "sort"].forEach((argKey) => {
-          argTrans.trans.forEach(
-            (t, idx) =>
-              (rootDict[this.languages[idx]][refName].signal[listKey].arg[
-                argKey
-              ] = { t: argKey }),
-          );
-          argTrans.descTrans?.forEach(
-            (t, idx) =>
-              (rootDict[this.languages[idx]][refName].signal[listKey].arg[
-                argKey
-              ].desc = { t: argKey }),
-          );
-        });
-        argTrans.trans.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[insightKey].arg[
-              argKey
-            ] = { t }),
-        );
-        argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[insightKey].arg[
-              argKey
-            ].desc = { t }),
-        );
-      });
-    });
   }
-  #registerEndpointToRoot(
-    refName: string,
-    rootDict: { [key: string]: object },
-  ) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].signal ??= {}),
-    );
+  #registerEndpointToRoot(refName: string, rootDict: { [key: string]: object }) {
+    this.languages.forEach((language) => (rootDict[language][refName].signal ??= {}));
     Object.entries(
       this.endpointDictionary as {
         [key: string]: FunctionTranslation<Languages>;
-      },
+      }
     ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key].desc = { t }),
-      );
-      Object.entries(
-        value.argTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([argKey, argTrans]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key].desc = { t }));
+      Object.entries(value.argTrans as { [key: string]: FieldTranslation<Languages> }).forEach(([argKey, argTrans]) => {
         argTrans.trans.forEach(
           (t, idx) =>
             (rootDict[this.languages[idx]][refName].signal[key].arg[argKey] = {
               t,
-            }),
+            })
         );
         argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[key].arg[
-              argKey
-            ].desc = { t }),
+          (t, idx) => (rootDict[this.languages[idx]][refName].signal[key].arg[argKey].desc = { t })
         );
       });
     });
   }
   #registerErrorToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].error ??= {}),
-    );
-    Object.entries(
-      this.errorDictionary as { [key: string]: Languages },
-    ).forEach(([key, value]) => {
+    this.languages.forEach((language) => (rootDict[language][refName].error ??= {}));
+    Object.entries(this.errorDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
       value.forEach((t, idx) => {
         rootDict[this.languages[idx]][refName].error[key] ??= {};
         rootDict[this.languages[idx]][refName].error[key].t = t;
@@ -814,17 +610,15 @@ export class ModelDictInfo<
     });
   }
   #registerEtcToRoot(refName: string, rootDict: { [key: string]: object }) {
-    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(
-      ([key, value]) => {
-        value.forEach((t, idx) => {
-          rootDict[this.languages[idx]][refName][key] ??= {};
-          rootDict[this.languages[idx]][refName][key].t = t;
-        });
-      },
-    );
+    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
+      value.forEach((t, idx) => {
+        rootDict[this.languages[idx]][refName][key] ??= {};
+        rootDict[this.languages[idx]][refName][key].t = t;
+      });
+    });
   }
   getEnum<Enum extends { refName: string; value: any }>(
-    enumName: EnumKey,
+    enumName: EnumKey
   ): { [K in Enum["value"]]: FieldTranslation<Languages> } {
     return this.enumDictionary[enumName] as unknown as {
       [K in Enum["value"]]: FieldTranslation<Languages>;
@@ -874,15 +668,14 @@ type MergeTwoModelDicts<ModelDict1, ModelDict2> =
         >
       : ModelDict1
     : never;
-type MergeModelDicts<ModelDicts extends ModelDictInfo<any>[]> =
-  ModelDicts extends [
-    infer First extends ModelDictInfo<any>,
-    ...infer Rest extends ModelDictInfo<any>[],
-  ]
-    ? Rest extends []
-      ? First
-      : MergeTwoModelDicts<First, MergeModelDicts<Rest>>
-    : never;
+type MergeModelDicts<ModelDicts extends ModelDictInfo<any>[]> = ModelDicts extends [
+  infer First extends ModelDictInfo<any>,
+  ...infer Rest extends ModelDictInfo<any>[],
+]
+  ? Rest extends []
+    ? First
+    : MergeTwoModelDicts<First, MergeModelDicts<Rest>>
+  : never;
 export const modelDictionary = <
   Languages extends [string, ...string[]] = [string],
   ExtendModelDicts extends ModelDictInfo<any>[] = [],
@@ -890,8 +683,7 @@ export const modelDictionary = <
   languages: Languages = ["en"] as unknown as Languages,
   ...extendModelDicts: ExtendModelDicts
 ): MergeModelDicts<[ModelDictInfo<Languages>, ...ExtendModelDicts]> => {
-  const modelDictionary =
-    extendModelDicts.at(0) ?? new ModelDictInfo(languages);
+  const modelDictionary = extendModelDicts.at(0) ?? new ModelDictInfo(languages);
 
   return modelDictionary as any;
 };
@@ -922,23 +714,19 @@ export class ScalarDictInfo<
   constructor(languages: Languages) {
     this.languages = languages;
   }
-  of(
-    translate: (
-      t: (trans: Languages) => FieldTranslation<Languages>,
-    ) => FieldTranslation<Languages>,
-  ) {
+  of(translate: (t: (trans: Languages) => FieldTranslation<Languages>) => FieldTranslation<Languages>) {
     this.modelTranslation = translate(FieldTranslation.translate);
     return this;
   }
   model<Model>(
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
       [K in keyof GetStateObject<Model>]: FieldTranslation<Languages>;
-    },
+    }
   ) {
     Object.assign(
       this.modelDictionary,
       translate(FieldTranslation.translate),
-      ModelDictInfo.baseModelDictionary,
+      ModelDictInfo.baseModelDictionary
     ) as unknown as { [K in ModelKey]: FieldTranslation<Languages> };
     return this as unknown as ScalarDictInfo<
       Languages,
@@ -953,42 +741,20 @@ export class ScalarDictInfo<
     enumName: Enum["refName"],
     translate: (t: (trans: Languages) => FieldTranslation<Languages>) => {
       [K in Enum["value"]]: FieldTranslation<Languages>;
-    },
+    }
   ) {
     Object.assign(this.enumDictionary, {
       [enumName]: translate(FieldTranslation.translate),
     });
-    return this as unknown as ScalarDictInfo<
-      Languages,
-      ModelKey,
-      EnumKey | Enum["refName"],
-      ErrorKey,
-      EtcKey
-    >;
+    return this as unknown as ScalarDictInfo<Languages, ModelKey, EnumKey | Enum["refName"], ErrorKey, EtcKey>;
   }
-  error<ErrorDict extends { [key: string]: Languages }>(
-    errorDictionary: ErrorDict,
-  ) {
+  error<ErrorDict extends { [key: string]: Languages }>(errorDictionary: ErrorDict) {
     Object.assign(this.errorDictionary, errorDictionary);
-    return this as unknown as ScalarDictInfo<
-      Languages,
-      ModelKey,
-      EnumKey,
-      keyof ErrorDict & string,
-      EtcKey
-    >;
+    return this as unknown as ScalarDictInfo<Languages, ModelKey, EnumKey, keyof ErrorDict & string, EtcKey>;
   }
-  translate<EtcDict extends { [key: string]: Languages }>(
-    etcDictionary: EtcDict,
-  ) {
+  translate<EtcDict extends { [key: string]: Languages }>(etcDictionary: EtcDict) {
     Object.assign(this.etcDictionary, etcDictionary);
-    return this as unknown as ScalarDictInfo<
-      Languages,
-      ModelKey,
-      EnumKey,
-      ErrorKey,
-      keyof EtcDict & string
-    >;
+    return this as unknown as ScalarDictInfo<Languages, ModelKey, EnumKey, ErrorKey, keyof EtcDict & string>;
   }
   _registerToRoot(refName: string, rootDict: { [key: string]: object }) {
     this.languages.forEach((language) => {
@@ -996,12 +762,8 @@ export class ScalarDictInfo<
       rootDict[language][refName] ??= {};
     });
     if (this.modelTranslation) {
-      this.modelTranslation.trans.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName].modelName = { t }),
-      );
-      this.modelTranslation.descTrans?.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName].modelDesc = { t }),
-      );
+      this.modelTranslation.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].modelName = { t }));
+      this.modelTranslation.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].modelDesc = { t }));
     }
     this.#registerEnumToRoot(rootDict);
     this.#registerErrorToRoot(refName, rootDict);
@@ -1009,46 +771,27 @@ export class ScalarDictInfo<
     this.#registerEtcToRoot(refName, rootDict);
   }
   #registerModelToRoot(refName: string, rootDict: { [key: string]: object }) {
-    Object.entries(
-      this.modelDictionary as { [key: string]: FieldTranslation<Languages> },
-    ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName][key] = { t }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) => (rootDict[this.languages[idx]][refName][key].desc = { t }),
-      );
+    Object.entries(this.modelDictionary as { [key: string]: FieldTranslation<Languages> }).forEach(([key, value]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName][key] = { t }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName][key].desc = { t }));
     });
   }
   #registerEnumToRoot(rootDict: { [key: string]: object }) {
     Object.entries(
       this.enumDictionary as {
         [key: string]: { [key: string]: FieldTranslation<Languages> };
-      },
+      }
     ).forEach(([refName, enumTrans]) => {
-      this.languages.forEach(
-        (language) => (rootDict[language][refName] ??= {}),
-      );
-      Object.entries(
-        enumTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([enumKey, enumValue]) => {
-        enumValue.trans.forEach(
-          (t, idx) => (rootDict[this.languages[idx]][refName][enumKey] = { t }),
-        );
-        enumValue.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName][enumKey].desc = { t }),
-        );
+      this.languages.forEach((language) => (rootDict[language][refName] ??= {}));
+      Object.entries(enumTrans as { [key: string]: FieldTranslation<Languages> }).forEach(([enumKey, enumValue]) => {
+        enumValue.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName][enumKey] = { t }));
+        enumValue.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName][enumKey].desc = { t }));
       });
     });
   }
   #registerErrorToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].error ??= {}),
-    );
-    Object.entries(
-      this.errorDictionary as { [key: string]: Languages },
-    ).forEach(([key, value]) => {
+    this.languages.forEach((language) => (rootDict[language][refName].error ??= {}));
+    Object.entries(this.errorDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
       value.forEach((t, idx) => {
         rootDict[this.languages[idx]][refName].error[key] ??= {};
         rootDict[this.languages[idx]][refName].error[key].t = t;
@@ -1056,21 +799,17 @@ export class ScalarDictInfo<
     });
   }
   #registerEtcToRoot(refName: string, rootDict: { [key: string]: object }) {
-    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(
-      ([key, value]) => {
-        value.forEach((t, idx) => {
-          rootDict[this.languages[idx]][refName][key] ??= {};
-          rootDict[this.languages[idx]][refName][key].t = t;
-        });
-      },
-    );
+    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
+      value.forEach((t, idx) => {
+        rootDict[this.languages[idx]][refName][key] ??= {};
+        rootDict[this.languages[idx]][refName][key].t = t;
+      });
+    });
   }
 }
 
-export const scalarDictionary = <
-  Languages extends [string, ...string[]] = [string],
->(
-  languages: Languages = ["en"] as unknown as Languages,
+export const scalarDictionary = <Languages extends [string, ...string[]] = [string]>(
+  languages: Languages = ["en"] as unknown as Languages
 ) => new ScalarDictInfo(languages);
 
 export class ServiceDictInfo<
@@ -1080,10 +819,9 @@ export class ServiceDictInfo<
   EtcKey extends string = never,
 > {
   languages: Languages;
-  endpointDictionary: { [K in EndpointKey]: FunctionTranslation<Languages> } =
-    {} as {
-      [K in EndpointKey]: FunctionTranslation<Languages>;
-    };
+  endpointDictionary: { [K in EndpointKey]: FunctionTranslation<Languages> } = {} as {
+    [K in EndpointKey]: FunctionTranslation<Languages>;
+  };
   errorDictionary: { [K in ErrorKey]: Languages } = {} as {
     [K in ErrorKey]: Languages;
   };
@@ -1095,52 +833,23 @@ export class ServiceDictInfo<
   }
   endpoint<Endpoint>(
     translate: (fn: (trans: Languages) => FunctionTranslation<Languages>) => {
-      [K in keyof Endpoint]: Endpoint[K] extends ApiInfo<
-        any,
-        any,
-        infer ArgNames,
-        any,
-        any,
-        any,
-        any,
-        any,
-        any
-      >
+      [K in keyof Endpoint]: Endpoint[K] extends EndpointInfo<any, any, infer ArgNames, any, any, any, any, any, any>
         ? FunctionTranslation<Languages, ArgNames[number]>
         : never;
-    },
+    }
   ) {
     Object.assign(this.endpointDictionary, translate(fn)) as unknown as {
       [K in EndpointKey]: FunctionTranslation<Languages>;
     };
-    return this as unknown as ServiceDictInfo<
-      Languages,
-      keyof Endpoint & string,
-      ErrorKey,
-      EtcKey
-    >;
+    return this as unknown as ServiceDictInfo<Languages, keyof Endpoint & string, ErrorKey, EtcKey>;
   }
-  error<ErrorDict extends { [key: string]: Languages }>(
-    errorDictionary: ErrorDict,
-  ) {
+  error<ErrorDict extends { [key: string]: Languages }>(errorDictionary: ErrorDict) {
     Object.assign(this.errorDictionary, errorDictionary);
-    return this as unknown as ServiceDictInfo<
-      Languages,
-      EndpointKey,
-      keyof ErrorDict & string,
-      EtcKey
-    >;
+    return this as unknown as ServiceDictInfo<Languages, EndpointKey, keyof ErrorDict & string, EtcKey>;
   }
-  translate<EtcDict extends { [key: string]: Languages }>(
-    etcDictionary: EtcDict,
-  ) {
+  translate<EtcDict extends { [key: string]: Languages }>(etcDictionary: EtcDict) {
     Object.assign(this.etcDictionary, etcDictionary);
-    return this as unknown as ServiceDictInfo<
-      Languages,
-      EndpointKey,
-      ErrorKey,
-      keyof EtcDict & string
-    >;
+    return this as unknown as ServiceDictInfo<Languages, EndpointKey, ErrorKey, keyof EtcDict & string>;
   }
 
   _toTranslation(): { [key: string]: string[] } {
@@ -1156,51 +865,31 @@ export class ServiceDictInfo<
     this.#registerEtcToRoot(refName, rootDict);
   }
 
-  #registerEndpointToRoot(
-    refName: string,
-    rootDict: { [key: string]: object },
-  ) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].signal ??= {}),
-    );
+  #registerEndpointToRoot(refName: string, rootDict: { [key: string]: object }) {
+    this.languages.forEach((language) => (rootDict[language][refName].signal ??= {}));
     Object.entries(
       this.endpointDictionary as {
         [key: string]: FunctionTranslation<Languages>;
-      },
+      }
     ).forEach(([key, value]) => {
-      value.trans.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }),
-      );
-      value.descTrans?.forEach(
-        (t, idx) =>
-          (rootDict[this.languages[idx]][refName].signal[key].desc = { t }),
-      );
-      Object.entries(
-        value.argTrans as { [key: string]: FieldTranslation<Languages> },
-      ).forEach(([argKey, argTrans]) => {
+      value.trans.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key] = { t, arg: {} }));
+      value.descTrans?.forEach((t, idx) => (rootDict[this.languages[idx]][refName].signal[key].desc = { t }));
+      Object.entries(value.argTrans as { [key: string]: FieldTranslation<Languages> }).forEach(([argKey, argTrans]) => {
         argTrans.trans.forEach(
           (t, idx) =>
             (rootDict[this.languages[idx]][refName].signal[key].arg[argKey] = {
               t,
-            }),
+            })
         );
         argTrans.descTrans?.forEach(
-          (t, idx) =>
-            (rootDict[this.languages[idx]][refName].signal[key].arg[
-              argKey
-            ].desc = { t }),
+          (t, idx) => (rootDict[this.languages[idx]][refName].signal[key].arg[argKey].desc = { t })
         );
       });
     });
   }
   #registerErrorToRoot(refName: string, rootDict: { [key: string]: object }) {
-    this.languages.forEach(
-      (language) => (rootDict[language][refName].error ??= {}),
-    );
-    Object.entries(
-      this.errorDictionary as { [key: string]: Languages },
-    ).forEach(([key, value]) => {
+    this.languages.forEach((language) => (rootDict[language][refName].error ??= {}));
+    Object.entries(this.errorDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
       value.forEach((t, idx) => {
         rootDict[this.languages[idx]][refName].error[key] ??= {};
         rootDict[this.languages[idx]][refName].error[key].t = t;
@@ -1208,18 +897,14 @@ export class ServiceDictInfo<
     });
   }
   #registerEtcToRoot(refName: string, rootDict: { [key: string]: object }) {
-    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(
-      ([key, value]) => {
-        value.forEach((t, idx) => {
-          rootDict[this.languages[idx]][refName][key] ??= {};
-          rootDict[this.languages[idx]][refName][key].t = t;
-        });
-      },
-    );
+    Object.entries(this.etcDictionary as { [key: string]: Languages }).forEach(([key, value]) => {
+      value.forEach((t, idx) => {
+        rootDict[this.languages[idx]][refName][key] ??= {};
+        rootDict[this.languages[idx]][refName][key].t = t;
+      });
+    });
   }
 }
-export const serviceDictionary = <
-  Languages extends [string, ...string[]] = [string],
->(
-  languages: Languages = ["en"] as unknown as Languages,
+export const serviceDictionary = <Languages extends [string, ...string[]] = [string]>(
+  languages: Languages = ["en"] as unknown as Languages
 ) => new ServiceDictInfo(languages);

@@ -7,28 +7,15 @@ import type { Cls } from "./types";
 export type { Dayjs };
 
 export const dayjs = dayjsLib;
-export class BaseObject {
-  declare id: string;
-  declare createdAt: Dayjs;
-  declare updatedAt: Dayjs;
-  declare removedAt: Dayjs | null;
-}
-export class BaseInsight {
-  declare count: number;
-}
 
 export class PrimitiveRegistry {
   static readonly #namePrimitiveMap = new Map<string, PrimitiveScalar>();
   static readonly #primitiveNameMap = new Map<PrimitiveScalar, string>();
   static register(scalar: typeof PrimitiveScalar, { overwrite = false } = {}) {
-    if (
-      !overwrite &&
-      (this.#namePrimitiveMap.has(scalar.$scalarName) ||
-        this.#primitiveNameMap.has(scalar))
-    )
-      throw new Error(`Scalar ${scalar.$scalarName} already registered`);
-    this.#namePrimitiveMap.set(scalar.$scalarName, scalar);
-    this.#primitiveNameMap.set(scalar, scalar.$scalarName);
+    if (!overwrite && (this.#namePrimitiveMap.has(scalar.refName) || this.#primitiveNameMap.has(scalar)))
+      throw new Error(`Scalar ${scalar.refName} already registered`);
+    this.#namePrimitiveMap.set(scalar.refName, scalar);
+    this.#primitiveNameMap.set(scalar, scalar.refName);
   }
   static get(name: string): PrimitiveScalar {
     const scalar = this.#namePrimitiveMap.get(name);
@@ -54,12 +41,17 @@ export class PrimitiveRegistry {
   }
 }
 
+export const PRIMITIVE_SERVER_VALUE = Symbol("PRIMITIVE_SERVER_VALUE");
+export const PRIMITIVE_CLIENT_VALUE = Symbol("PRIMITIVE_CLIENT_VALUE");
+export const PRIMITIVE_DEFAULT_VALUE = Symbol("PRIMITIVE_DEFAULT_VALUE");
+export const PRIMITIVE_EXAMPLE_VALUE = Symbol("PRIMITIVE_EXAMPLE_VALUE");
+
 export class PrimitiveScalar {
-  static $scalarName: string;
-  static $serverValue: unknown;
-  static $clientValue: unknown;
-  static $defaultValue: unknown = null;
-  static $exampleValue: unknown = null;
+  static refName: string;
+  static [PRIMITIVE_SERVER_VALUE]: unknown;
+  static [PRIMITIVE_CLIENT_VALUE]: unknown;
+  static [PRIMITIVE_DEFAULT_VALUE]: unknown = null;
+  static [PRIMITIVE_EXAMPLE_VALUE]: unknown = null;
 
   static validate(value: any): boolean {
     return true;
@@ -80,17 +72,16 @@ export class PrimitiveScalar {
     return this.serializeValue(value);
   }
   static _checkValue(this: typeof PrimitiveScalar, value: any): void {
-    if (!this.validate(value))
-      throw new Error(`Invalid ${this.$scalarName} value: ${value}`);
+    if (!this.validate(value)) throw new Error(`Invalid ${this.refName} value: ${value}`);
   }
 }
 
 export class Int extends PrimitiveScalar {
-  static override $scalarName: "Int" = "Int";
-  static override $serverValue: number;
-  static override $clientValue: number;
-  static override $defaultValue: number = 0;
-  static override $exampleValue: number = 0;
+  static override refName: "Int" = "Int";
+  static [PRIMITIVE_SERVER_VALUE]: number;
+  static [PRIMITIVE_CLIENT_VALUE]: number;
+  static [PRIMITIVE_DEFAULT_VALUE]: number = 0;
+  static [PRIMITIVE_EXAMPLE_VALUE]: number = 0;
 
   static override validate(value: any): boolean {
     return typeof value === "number" && Number.isSafeInteger(value);
@@ -105,11 +96,11 @@ export class Int extends PrimitiveScalar {
 PrimitiveRegistry.register(Int);
 
 export class Float extends PrimitiveScalar {
-  static override $scalarName: "Float" = "Float";
-  static override $serverValue: number;
-  static override $clientValue: number;
-  static override $defaultValue: number = 0;
-  static override $exampleValue: number = 0;
+  static override refName: "Float" = "Float";
+  static [PRIMITIVE_SERVER_VALUE]: number;
+  static [PRIMITIVE_CLIENT_VALUE]: number;
+  static [PRIMITIVE_DEFAULT_VALUE]: number = 0;
+  static [PRIMITIVE_EXAMPLE_VALUE]: number = 0;
 
   static override validate(value: any): boolean {
     return typeof value === "number" && Number.isFinite(value);
@@ -124,11 +115,11 @@ export class Float extends PrimitiveScalar {
 PrimitiveRegistry.register(Float);
 
 export class ID extends PrimitiveScalar {
-  static override $scalarName: "ID" = "ID";
-  static override $serverValue: string;
-  static override $clientValue: string;
-  static override $defaultValue: string = "000000000000000000000000";
-  static override $exampleValue: string = "1234567890abcdef12345678";
+  static override refName: "ID" = "ID";
+  static [PRIMITIVE_SERVER_VALUE]: string;
+  static [PRIMITIVE_CLIENT_VALUE]: string;
+  static [PRIMITIVE_DEFAULT_VALUE]: string = "000000000000000000000000";
+  static [PRIMITIVE_EXAMPLE_VALUE]: string = "1234567890abcdef12345678";
 
   static override validate(value: any): boolean {
     if (typeof value !== "string") return false;
@@ -143,37 +134,34 @@ export class ID extends PrimitiveScalar {
 }
 PrimitiveRegistry.register(ID);
 
-export class Any<
-  ServerValue = any,
-  ClientValue = ServerValue,
-> extends PrimitiveScalar {
-  static override $scalarName: "Any" = "Any";
-  static override $defaultValue: any = null;
-  static override $exampleValue: any = {};
+export class Any<ServerValue = any, ClientValue = ServerValue> extends PrimitiveScalar {
+  static override refName: "Any" = "Any";
+  static [PRIMITIVE_DEFAULT_VALUE]: any = null;
+  static [PRIMITIVE_EXAMPLE_VALUE]: any = {};
 }
 PrimitiveRegistry.register(Any);
 
 export class Upload extends PrimitiveScalar {
-  static override $scalarName: "Upload" = "Upload";
-  static override $serverValue: File;
-  static override $clientValue: {
+  static override refName: "Upload" = "Upload";
+  static [PRIMITIVE_SERVER_VALUE]: File;
+  static [PRIMITIVE_CLIENT_VALUE]: {
     filename: string;
     mimetype: string;
     encoding: string;
     createReadStream: () => ReadStream | Readable;
   };
-  static override $defaultValue: any = null;
-  static override $exampleValue = "FileUpload";
+  static [PRIMITIVE_DEFAULT_VALUE]: any = null;
+  static [PRIMITIVE_EXAMPLE_VALUE] = "FileUpload";
 }
 PrimitiveRegistry.register(Upload);
 
 declare global {
   interface StringConstructor {
-    $scalarName: "String";
-    $serverValue: string;
-    $clientValue: string;
-    $defaultValue: string;
-    $exampleValue: string;
+    refName: "String";
+    [PRIMITIVE_SERVER_VALUE]: string;
+    [PRIMITIVE_CLIENT_VALUE]: string;
+    [PRIMITIVE_DEFAULT_VALUE]: string;
+    [PRIMITIVE_EXAMPLE_VALUE]: string;
     validate(value: any): boolean;
     parseValue(input: any): string;
     serializeValue(value: string): string;
@@ -182,11 +170,11 @@ declare global {
     _checkValue(value: any): void;
   }
   interface BooleanConstructor {
-    $scalarName: "Boolean";
-    $serverValue: boolean;
-    $clientValue: boolean;
-    $defaultValue: boolean;
-    $exampleValue: boolean;
+    refName: "Boolean";
+    [PRIMITIVE_SERVER_VALUE]: boolean;
+    [PRIMITIVE_CLIENT_VALUE]: boolean;
+    [PRIMITIVE_DEFAULT_VALUE]: boolean;
+    [PRIMITIVE_EXAMPLE_VALUE]: boolean;
     validate(value: any): boolean;
     parseValue(input: any): boolean;
     serializeValue(value: boolean): boolean;
@@ -195,11 +183,11 @@ declare global {
     _checkValue(value: any): void;
   }
   interface DateConstructor {
-    $scalarName: "Date";
-    $serverValue: Dayjs;
-    $clientValue: Dayjs;
-    $defaultValue: Dayjs;
-    $exampleValue: string;
+    refName: "Date";
+    [PRIMITIVE_SERVER_VALUE]: Dayjs;
+    [PRIMITIVE_CLIENT_VALUE]: Dayjs;
+    [PRIMITIVE_DEFAULT_VALUE]: Dayjs;
+    [PRIMITIVE_EXAMPLE_VALUE]: string;
     validate(value: any): boolean;
     parseValue(input: any): Dayjs;
     serializeValue(value: Date): string;
@@ -220,17 +208,16 @@ const scalarPrimitiveStatics = {
     return this.serializeValue(value);
   },
   _checkValue(this: typeof PrimitiveScalar, value: any): void {
-    if (!this.validate(value))
-      throw new Error(`Invalid ${this.$scalarName} value: ${value}`);
+    if (!this.validate(value)) throw new Error(`Invalid ${this.refName} value: ${value}`);
   },
 };
 
 // String
 Object.assign(String, {
   ...scalarPrimitiveStatics,
-  $scalarName: "String",
-  $defaultValue: "",
-  $exampleValue: "String",
+  refName: "String",
+  [PRIMITIVE_DEFAULT_VALUE]: "",
+  [PRIMITIVE_EXAMPLE_VALUE]: "String",
   validate(value: any) {
     return typeof value === "string";
   },
@@ -246,9 +233,9 @@ PrimitiveRegistry.register(String);
 // Boolean
 Object.assign(Boolean, {
   ...scalarPrimitiveStatics,
-  $scalarName: "Boolean",
-  $defaultValue: false,
-  $exampleValue: true,
+  refName: "Boolean",
+  [PRIMITIVE_DEFAULT_VALUE]: false,
+  [PRIMITIVE_EXAMPLE_VALUE]: true,
   validate(value: any) {
     return typeof value === "boolean";
   },
@@ -264,9 +251,9 @@ PrimitiveRegistry.register(Boolean);
 // Date
 Object.assign(Date, {
   ...scalarPrimitiveStatics,
-  $scalarName: "Date",
-  $defaultValue: dayjs(new Date(-1)),
-  $exampleValue: dayjs(new Date().toISOString()),
+  refName: "Date",
+  [PRIMITIVE_DEFAULT_VALUE]: dayjs(new Date(-1)),
+  [PRIMITIVE_EXAMPLE_VALUE]: dayjs(new Date().toISOString()),
   validate(value: any) {
     const date = new Date(value);
     if (isNaN(date.getTime())) return false;
@@ -280,98 +267,3 @@ Object.assign(Date, {
   },
 });
 PrimitiveRegistry.register(Date);
-
-// export type SingleFieldType =
-//   | Int
-//   | Float
-//   | StringConstructor
-//   | BooleanConstructor
-//   | ID
-//   | DateConstructor
-//   | Any
-//   | Cls
-//   | GraphQLJSON
-//   | GraphQLUpload;
-
-// export const gqlScalars = [
-//   String,
-//   Boolean,
-//   Date,
-//   ID,
-//   Int,
-//   Float,
-//   Upload,
-//   Any,
-//   Map,
-// ] as const;
-// export type GqlScalar = (typeof gqlScalars)[number];
-// export const gqlScalarNames = [
-//   "ID",
-//   "Int",
-//   "Float",
-//   "String",
-//   "Boolean",
-//   "Date",
-//   "Upload",
-//   "Any",
-//   "Map",
-// ] as const;
-// export type GqlScalarName = (typeof gqlScalarNames)[number];
-// export const scalarSet = new Set<GqlScalar>([
-//   String,
-//   Boolean,
-//   Date,
-//   ID,
-//   Int,
-//   Float,
-//   Upload,
-//   Any,
-//   Map,
-// ]);
-// export const gqlScalarMap = new Map<GqlScalarName, GqlScalar>([
-//   ["ID", ID],
-//   ["Int", Int],
-//   ["Float", Float],
-//   ["String", String],
-//   ["Boolean", Boolean],
-//   ["Date", Date],
-//   ["Upload", Upload],
-//   ["Any", Any],
-//   ["Map", Map],
-// ]);
-// export const scalarNameMap = new Map<GqlScalar, GqlScalarName>([
-//   [ID, "ID"],
-//   [Int, "Int"],
-//   [Float, "Float"],
-//   [String, "String"],
-//   [Boolean, "Boolean"],
-//   [Date, "Date"],
-//   [Upload, "Upload"],
-//   [Any, "Any"],
-//   [Map, "Map"],
-// ]);
-// export const scalarArgMap = new Map<GqlScalar, any>([
-//   [ID, null],
-//   [String, ""],
-//   [Boolean, false],
-//   [Date, dayjs(new Date(-1))],
-//   [Int, 0],
-//   [Float, 0],
-//   [Any, {}],
-//   [Map, {}],
-// ]);
-// export const scalarDefaultMap = new Map<GqlScalar, any>([
-//   [ID, null],
-//   [String, ""],
-//   [Boolean, false],
-//   [Date, dayjs(new Date(-1))],
-//   [Int, 0],
-//   [Float, 0],
-//   [Any, {}],
-// ]);
-
-// export const isGqlClass = (modelRef: Cls) =>
-//   !(modelRef.prototype instanceof PrimitiveScalar);
-// export const isGqlScalar = (modelRef: Cls) =>
-//   modelRef.prototype instanceof PrimitiveScalar;
-// export const isGqlMap = (modelRef: any) => modelRef === Map;

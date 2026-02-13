@@ -4,19 +4,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { dayjs, type PromiseOrObject } from "@akanjs/base";
 import { isValidDate } from "@akanjs/common";
-import {
-  isValidObjectId,
-  type PipelineStage,
-  type ProjectionType,
-  Types,
-} from "mongoose";
+import { isValidObjectId, type PipelineStage, type ProjectionType, Types } from "mongoose";
 
-import {
-  type CRUDEventType,
-  type Doc,
-  type Mdl,
-  type SaveEventType,
-} from "./dbDecorators";
+import { type CRUDEventType, type Doc, type Mdl, type SaveEventType } from "./dbDecorators";
 import type { QueryOf } from "@akanjs/constant";
 
 export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
@@ -36,7 +26,7 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
     pickOne: async function (
       this: Mdl<Doc<any>, TSchema>,
       query: QueryOf<TSchema>,
-      projection?: ProjectionType<TSchema>,
+      projection?: ProjectionType<TSchema>
     ): Promise<TDocument> {
       const doc = await this.findOne(query, projection);
       if (!doc) throw new Error("No Document");
@@ -45,7 +35,7 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
     pickById: async function (
       this: Mdl<Doc<any>, TSchema>,
       docId: string | undefined,
-      projection?: ProjectionType<TSchema>,
+      projection?: ProjectionType<TSchema>
     ): Promise<TDocument> {
       if (!docId) throw new Error("No Document ID");
       const doc = await this.findById(docId, projection);
@@ -56,7 +46,7 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
       this: Mdl<Doc<any>, TSchema>,
       query: QueryOf<TSchema>,
       size = 1,
-      aggregations: PipelineStage[] = [],
+      aggregations: PipelineStage[] = []
     ): Promise<TDocument[]> {
       const objs = await this.aggregate([
         { $match: convertAggregateMatch(query) },
@@ -68,7 +58,7 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
     sampleOne: async function (
       this: Mdl<Doc<any>, TSchema>,
       query: QueryOf<TSchema>,
-      aggregations: PipelineStage[] = [],
+      aggregations: PipelineStage[] = []
     ): Promise<TDocument | null> {
       const obj = await this.aggregate([
         { $match: convertAggregateMatch(query) },
@@ -77,33 +67,17 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
       ]);
       return obj.length ? new this(obj[0]) : null;
     },
-    preSaveListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    postSaveListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    preCreateListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    postCreateListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    preUpdateListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    postUpdateListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    preRemoveListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
-    postRemoveListenerSet: new Set<
-      (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
-    >(),
+    preSaveListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    postSaveListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    preCreateListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    postCreateListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    preUpdateListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    postUpdateListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    preRemoveListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
+    postRemoveListenerSet: new Set<(doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>>(),
     listenPre: function (
       type: SaveEventType,
-      listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>,
+      listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
     ) {
       if (type === "save") {
         this.preSaveListenerSet.add(listener);
@@ -129,7 +103,7 @@ export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
     },
     listenPost: function (
       type: SaveEventType,
-      listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>,
+      listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
     ) {
       if (type === "save") {
         this.postSaveListenerSet.add(listener);
@@ -165,16 +139,13 @@ const convertOperatorValue = (value: any): any => {
   else if (typeof value !== "object") return value;
   else
     return Object.fromEntries(
-      Object.entries(value as object).map(([key, value]) => [
-        key,
-        convertOperatorValue(value),
-      ]),
+      Object.entries(value as object).map(([key, value]) => [key, convertOperatorValue(value)])
     );
 };
 export const convertAggregateMatch = (query: any) => {
   return Object.fromEntries(
     Object.entries(query as object).map(([key, value]: [string, any]) => {
       return [key, convertOperatorValue(value)];
-    }),
+    })
   );
 };
