@@ -7,9 +7,7 @@ import type { ServiceModule } from "@akanjs/service";
 export const SLICE_META_KEY = Symbol("slice");
 export type SliceCls<
   SrvModule extends ServiceModule = ServiceModule,
-  SliceInfoObj extends { [key: string]: SliceInfo<any, any, any, any, any, any, any, any, any> } = {
-    [key: string]: SliceInfo<any, any, any, any, any, any, any, any, any>;
-  },
+  SliceInfoObj extends { [key: string]: SliceInfo } = { [key: string]: SliceInfo },
 > = Cls<
   any,
   {

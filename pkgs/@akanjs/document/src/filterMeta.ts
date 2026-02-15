@@ -1,12 +1,6 @@
-import {
-  type BaseObject,
-  getNonArrayModel,
-  type MergeAllKeyOfTypes,
-  type Cls,
-  type MergeAllDoubleKeyOfObjects,
-} from "@akanjs/base";
-import { applyMixins } from "@akanjs/common";
+import { type MergeAllKeyOfTypes, type Cls, type MergeAllDoubleKeyOfObjects } from "@akanjs/base";
 import type {
+  BaseObject,
   ConstantFieldTypeInput,
   DocumentModel,
   FieldToValue,
@@ -84,7 +78,7 @@ export type BaseFilterQueryKey = "any";
 export type BaseFilterKey = BaseFilterSortKey | BaseFilterQueryKey;
 
 export interface FilterInstance<
-  Query extends { [key: string]: FilterInfo<any, any, any> } = {},
+  Query extends { [key: string]: FilterInfo } = {},
   Sort extends { [key: string]: any } = {},
 > {
   query: Query;
@@ -150,7 +144,7 @@ interface ArgProps<Value = any> {
   default?: Value;
   renderOption?: (arg: any) => string;
 }
-export class FilterInfo<ArgNames extends string[] = [], Args extends any[] = [], Model = any> {
+export class FilterInfo<ArgNames extends string[] = any, Args extends any[] = any, Model = any> {
   readonly argNames: ArgNames = [] as unknown as ArgNames;
   readonly args: { name: string; argRef: any; option?: ArgProps }[];
   queryFn: ((...args: Args) => QueryOf<Model>) | null = null;
@@ -188,4 +182,4 @@ export class FilterInfo<ArgNames extends string[] = [], Args extends any[] = [],
   }
 }
 
-export const filter = () => new FilterInfo();
+export const filter = () => new FilterInfo<[], [], any>();

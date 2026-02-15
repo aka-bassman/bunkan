@@ -6,8 +6,8 @@ import type { DefaultOf, DocumentModel, QueryOf } from "./types";
 export type ModelType = "input" | "object" | "full" | "light" | "insight" | "filter" | "scalar";
 
 export class ConstantRegistry {
-  static database = new Map<string, ConstantModel<string, any, any, any, any, any>>();
-  static scalar = new Map<string, ScalarConstantModel<any, any, any, any, any>>();
+  static database = new Map<string, ConstantModel>();
+  static scalar = new Map<string, ScalarConstantModel>();
   static modelRefNameMap = new Map<Cls, string>();
   static getRefName<AllowEmpty extends boolean = false>(
     modelRef: Cls,
@@ -35,36 +35,28 @@ export class ConstantRegistry {
   static isScalar(modelRef: Cls<any, { modelType?: ModelType }>) {
     return modelRef.modelType === "scalar";
   }
-  static setDatabase(refName: string, cnst: ConstantModel<string, any, any, any, any, any>) {
+  static setDatabase(refName: string, cnst: ConstantModel) {
     this.database.set(refName, cnst);
   }
   static getDatabase<AllowEmpty extends boolean = false>(
     refName: string,
     { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
-  ): AllowEmpty extends true
-    ? ConstantModel<string, unknown, unknown, unknown, unknown, unknown> | undefined
-    : ConstantModel<string, unknown, unknown, unknown, unknown, unknown> {
+  ): AllowEmpty extends true ? ConstantModel | undefined : ConstantModel {
     const info = this.database.get(refName);
     if (!info && !allowEmpty) throw new Error(`No database constant model info for ${refName}`);
-    return info as AllowEmpty extends true
-      ? ConstantModel<string, unknown, unknown, unknown, unknown, unknown> | undefined
-      : ConstantModel<string, unknown, unknown, unknown, unknown, unknown>;
+    return info as AllowEmpty extends true ? ConstantModel | undefined : ConstantModel;
   }
-  static setScalar(refName: string, cnst: ScalarConstantModel<string, unknown, unknown, unknown, unknown>) {
+  static setScalar(refName: string, cnst: ScalarConstantModel) {
     if (this.scalar.has(refName)) return;
     this.scalar.set(refName, cnst);
   }
   static getScalar<AllowEmpty extends boolean = false>(
     refName: string,
     { allowEmpty }: { allowEmpty?: AllowEmpty } = {}
-  ): AllowEmpty extends true
-    ? ScalarConstantModel<string, unknown, unknown, unknown, unknown> | undefined
-    : ScalarConstantModel<string, unknown, unknown, unknown, unknown> {
+  ): AllowEmpty extends true ? ScalarConstantModel | undefined : ScalarConstantModel {
     const model = this.scalar.get(refName);
     if (!model && !allowEmpty) throw new Error(`No scalar constant model for ${refName}`);
-    return model as AllowEmpty extends true
-      ? ScalarConstantModel<string, unknown, unknown, unknown, unknown> | undefined
-      : ScalarConstantModel<string, unknown, unknown, unknown, unknown>;
+    return model as AllowEmpty extends true ? ScalarConstantModel | undefined : ScalarConstantModel;
   }
   static getModelRef(
     refName: string,
@@ -153,7 +145,7 @@ export class ConstantRegistry {
     Model: Cls<Model>
   ): ScalarConstantModel<T, Model, DefaultOf<Model>, DocumentModel<Model>, PurifiedModel<Model>> {
     this.modelRefNameMap.set(Model, refName);
-    const cnst: ScalarConstantModel<T, any, any, any, any> = {
+    const cnst = {
       refName,
       model: Model as ConstantCls<any>,
       _Default: null as unknown as DefaultOf<Model>,
@@ -161,17 +153,23 @@ export class ConstantRegistry {
       _PurifiedInput: null as unknown as PurifiedModel<Model>,
     };
     this.setScalar(refName, cnst);
-    return cnst;
+    return cnst as unknown as ScalarConstantModel<
+      T,
+      Model,
+      DefaultOf<Model>,
+      DocumentModel<Model>,
+      PurifiedModel<Model>
+    >;
   }
 }
 
 export interface ConstantModel<
-  T extends string,
-  Input,
-  Obj,
-  Full,
-  Light,
-  Insight,
+  T extends string = string,
+  Input = any,
+  Obj = any,
+  Full = any,
+  Light = any,
+  Insight = any,
   _CapitalizedT extends string = Capitalize<T>,
   _Default = DefaultOf<Full>,
   _DefaultInput = DefaultOf<Input>,
@@ -202,8 +200,8 @@ export interface ConstantModel<
 }
 
 export interface ScalarConstantModel<
-  T extends string,
-  Model,
+  T extends string = string,
+  Model = any,
   _Default = DefaultOf<Model>,
   _Doc = DocumentModel<Model>,
   _PurifiedInput = PurifiedModel<Model>,

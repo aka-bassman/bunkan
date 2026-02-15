@@ -146,7 +146,7 @@ interface ConstantFieldBuildProps<FieldValue = any, MapValue = any, Metadata = {
   meta: Metadata;
 }
 
-export interface FieldProps extends ConstantFieldBuildProps<any, any, any> {
+export interface FieldProps extends ConstantFieldBuildProps {
   isClass: boolean;
   isScalar: boolean;
   isArray: boolean;

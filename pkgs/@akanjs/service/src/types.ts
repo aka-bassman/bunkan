@@ -17,13 +17,13 @@ import type { QueryOf } from "@akanjs/constant";
 import type { Logger } from "@akanjs/common";
 
 export type DatabaseService<
-  T extends string,
-  Input,
-  Doc,
-  Obj,
-  Model,
-  Insight,
-  Filter extends FilterInstance,
+  T extends string = string,
+  Input = any,
+  Doc = any,
+  Obj = any,
+  Model = any,
+  Insight = any,
+  Filter extends FilterInstance = FilterInstance,
   LibSrvs extends Cls[] = [],
   _Query extends ExtractQuery<Filter> = ExtractQuery<Filter>,
   _Sort extends ExtractSort<Filter> = ExtractSort<Filter>,

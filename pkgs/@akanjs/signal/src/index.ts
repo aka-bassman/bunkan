@@ -13,3 +13,4 @@ export * from "./internal";
 export * from "./endpoint";
 export * from "./slice";
 export * from "./serverSignal";
+export * from "./signalRegistry";

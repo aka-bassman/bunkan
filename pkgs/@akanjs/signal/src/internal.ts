@@ -5,9 +5,7 @@ import type { Cls, MergeAllKeyOfObjects, MergeAllTypes } from "@akanjs/base";
 export const INTERNAL_META_KEY = Symbol("internalApi");
 export type InternalCls<
   SrvModule extends ServiceModule = ServiceModule,
-  InternalInfoMap extends { [key: string]: InternalInfo<any, any, any, any, any, any, any> } = {
-    [key: string]: InternalInfo<any, any, any, any, any, any, any>;
-  },
+  InternalInfoMap extends { [key: string]: InternalInfo } = { [key: string]: InternalInfo },
 > = Cls<any, { refName: SrvModule["refName"]; srv: SrvModule; [INTERNAL_META_KEY]: InternalInfoMap }>;
 
 export function internal<

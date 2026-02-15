@@ -29,7 +29,7 @@ export type ServiceType = "database" | "plain";
 export type ServiceCls<
   RefName extends string = string,
   Methods = {},
-  InjectMap extends { [key: string]: InjectInfo<any> } = {},
+  InjectMap extends { [key: string]: InjectInfo } = {},
 > = Cls<
   Methods &
     ExtractInjectInfoObject<InjectMap> & {
@@ -107,7 +107,7 @@ export function serve<
 ): ServiceCls<T, DatabaseService<T, Input, Doc, Obj, Model, Insight, Filter, LibSrvs>, ReturnType<Injection>>;
 
 export function serve(
-  refNameOrDb: string | Database<any, any, any, any, any, any, any, any>,
+  refNameOrDb: string | Database,
   optionOrInjectBuilder: ServiceOptions | InjectBuilder,
   injectBuilderOrExtendSrv?: InjectBuilder<Exclude<InjectType, "database">> | Cls,
   ...extendSrvs: Cls[]

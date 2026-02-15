@@ -17,15 +17,15 @@ import type { ArgType, SignalOption } from "./types";
 import type { ServiceModule } from "@akanjs/service";
 
 export class SliceInfo<
-  T extends string,
-  Full,
-  Light,
-  Insight,
+  T extends string = string,
+  Full = any,
+  Light = any,
+  Insight = any,
   Srvs extends { [key: string]: any } = { [key: string]: any },
-  ArgNames extends string[] = [],
-  Args extends any[] = [],
-  InternalArgs extends any[] = [],
-  ServerArgs extends any[] = [],
+  ArgNames extends string[] = any,
+  Args extends any[] = any,
+  InternalArgs extends any[] = any,
+  ServerArgs extends any[] = any,
 > {
   readonly refName: T;
   readonly full: Cls<Full>;
@@ -360,5 +360,5 @@ export type SliceBuilder<
 > = (
   init: (signalOption?: SignalOption) => SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>
 ) => {
-  [key: string]: SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"], any, any, any, any>;
+  [key: string]: SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>;
 };

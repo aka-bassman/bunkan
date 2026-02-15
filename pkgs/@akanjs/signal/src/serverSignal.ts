@@ -3,36 +3,53 @@ import { type EndpointInfo } from "./endpointInfo";
 import { InternalInfo } from "./internalInfo";
 import { ENDPOINT_META_KEY, type EndpointCls } from "./endpoint";
 import { INTERNAL_META_KEY, type InternalCls } from "./internal";
+import type { DocumentModel, FieldToValue } from "@akanjs/constant";
+import type { Job, Queue } from "bull";
+import type { ServerWebSocket } from "bun";
+import { adapt } from "@akanjs/service";
 
-export type ServerSignalCls<EnpCls extends EndpointCls, IntCls extends InternalCls> = Cls<
-  {},
+export type ServerSignalCls<
+  EnpCls extends EndpointCls,
+  IntCls extends InternalCls,
+  _EndpointInfoObj extends { [key: string]: EndpointInfo } = {
+    [K in keyof EnpCls[typeof ENDPOINT_META_KEY] as EnpCls[typeof ENDPOINT_META_KEY][K]["type"] extends "pubsub"
+      ? K
+      : never]: EnpCls[typeof ENDPOINT_META_KEY][K];
+  },
+  _InternalInfoObj extends { [key: string]: InternalInfo } = {
+    [K in keyof IntCls[typeof INTERNAL_META_KEY] as IntCls[typeof INTERNAL_META_KEY][K]["type"] extends "process"
+      ? K
+      : never]: IntCls[typeof INTERNAL_META_KEY][K];
+  },
+> = Cls<
   {
-    readonly [ENDPOINT_META_KEY]: {
-      [K in keyof EnpCls[typeof ENDPOINT_META_KEY] as EnpCls[typeof ENDPOINT_META_KEY][K] extends EndpointInfo<
-        "pubsub",
-        any,
-        any,
-        any,
-        any,
-        any,
-        any
-      >
-        ? K
-        : never]: EnpCls[typeof ENDPOINT_META_KEY][K];
-    };
-    readonly [INTERNAL_META_KEY]: {
-      [K in keyof IntCls[typeof INTERNAL_META_KEY] as IntCls[typeof INTERNAL_META_KEY][K] extends InternalInfo<
-        "process",
-        any,
-        any,
-        any,
-        any,
-        any,
-        any
-      >
-        ? K
-        : never]: IntCls[typeof INTERNAL_META_KEY][K];
-    };
+    [K in keyof _EndpointInfoObj]: _EndpointInfoObj[K] extends EndpointInfo<
+      any,
+      any,
+      any,
+      any,
+      any,
+      infer ServerArgs,
+      infer Returns
+    >
+      ? (...args: [...ServerArgs, data: DocumentModel<FieldToValue<Returns>>]) => void
+      : never;
+  } & {
+    [K in keyof _InternalInfoObj]: _InternalInfoObj[K] extends InternalInfo<
+      any,
+      any,
+      infer ServerArgs,
+      any,
+      any,
+      infer Returns
+    >
+      ? (...args: ServerArgs) => Promise<Job<FieldToValue<Returns>>>
+      : never;
+  } & { websocket: ServerWebSocket; queue: Queue },
+  {
+    readonly refName: EnpCls["refName"];
+    readonly [ENDPOINT_META_KEY]: _EndpointInfoObj;
+    readonly [INTERNAL_META_KEY]: _InternalInfoObj;
   }
 >;
 
@@ -40,7 +57,10 @@ export const serverSignal = <EnpCls extends EndpointCls, IntCls extends Internal
   endpointRef: EnpCls,
   internalRef: IntCls
 ): ServerSignalCls<EnpCls, IntCls> => {
-  return class ServerSignal {
+  return class ServerSignal extends adapt(`${endpointRef.refName}Signal`, ({ use }) => ({
+    websocket: use<ServerWebSocket>(),
+    queue: use<Queue>(),
+  })) {
     static readonly [ENDPOINT_META_KEY] = Object.fromEntries(
       Object.entries(endpointRef[ENDPOINT_META_KEY])
         .filter(([key, endpointInfo]) => endpointInfo.type === "pubsub")
@@ -51,5 +71,5 @@ export const serverSignal = <EnpCls extends EndpointCls, IntCls extends Internal
         .filter(([key, internalInfo]) => internalInfo.type === "process")
         .map(([key, value]) => [key, value])
     );
-  } as ServerSignalCls<EnpCls, IntCls>;
+  } as unknown as ServerSignalCls<EnpCls, IntCls>;
 };

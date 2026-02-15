@@ -19,15 +19,15 @@ export interface EndpointArgProps<Optional extends boolean = false> {
   example?: string | number | boolean | Dayjs;
 }
 export class EndpointInfo<
-  ReqType extends EndpointType,
+  ReqType extends EndpointType = EndpointType,
   Srvs extends { [key: string]: any } = { [key: string]: any },
-  ArgNames extends string[] = [],
-  Args extends any[] = [],
-  InternalArgs extends any[] = [],
-  ServerArgs extends any[] = [],
+  ArgNames extends string[] = any,
+  Args extends any[] = any,
+  InternalArgs extends any[] = any,
+  ServerArgs extends any[] = any,
   Returns extends ConstantFieldTypeInput = ConstantFieldTypeInput,
   ServerReturns = never,
-  Nullable extends boolean = false,
+  Nullable extends boolean = boolean,
 > {
   readonly type: ReqType;
   readonly argNames: ArgNames = [] as unknown as ArgNames;
@@ -282,5 +282,5 @@ export const buildEndpoint = {
 } as unknown as BuildEndpoint<any>;
 
 export type EndpointBuilder<SrvModule extends ServiceModule = ServiceModule> = (builder: BuildEndpoint<SrvModule>) => {
-  [key: string]: EndpointInfo<any, any, any, any, any, any, any, any, any>;
+  [key: string]: EndpointInfo;
 };

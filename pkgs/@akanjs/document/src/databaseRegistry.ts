@@ -2,7 +2,7 @@ import type { Cls } from "@akanjs/base";
 import type { ConstantCls } from "@akanjs/constant";
 import type { HydratedDocument } from "mongoose";
 
-import type { BaseMiddleware } from "./dbDecorators";
+import type { BaseMiddleware } from "./beyond";
 import type { FilterCls, FilterInstance } from ".";
 import type { ModelCls } from "./loaderInfo";
 
@@ -48,10 +48,7 @@ export class DatabaseRegistry {
   static isScalar(modelRef: Cls) {
     return this.#modelSets.scalar.has(modelRef);
   }
-  static setDatabase(
-    refName: string,
-    { Input, Doc, Model, Middleware, Filter }: Database<any, any, any, any, any, any, any, any>
-  ) {
+  static setDatabase(refName: string, { Input, Doc, Model, Middleware, Filter }: Database) {
     if (!this.#database.has(refName))
       this.#database.set(refName, {
         input: Input,
@@ -97,7 +94,7 @@ export class DatabaseRegistry {
   static buildModel<
     T extends string,
     Input,
-    Doc extends HydratedDocument<any>,
+    Doc extends HydratedDocument,
     Model,
     Middleware extends BaseMiddleware,
     Obj,
@@ -135,14 +132,14 @@ export class DatabaseRegistry {
 }
 
 export interface Database<
-  T extends string,
-  Input,
-  Doc extends HydratedDocument<any>,
-  Model,
-  Middleware extends BaseMiddleware,
-  Obj,
-  Insight,
-  Filter extends FilterInstance,
+  T extends string = string,
+  Input = any,
+  Doc extends HydratedDocument = HydratedDocument,
+  Model = any,
+  Middleware extends BaseMiddleware = BaseMiddleware,
+  Obj = any,
+  Insight = any,
+  Filter extends FilterInstance = FilterInstance,
 > {
   refName: T;
   Input: Cls<Input>;

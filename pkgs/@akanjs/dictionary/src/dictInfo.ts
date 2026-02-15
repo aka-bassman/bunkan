@@ -831,11 +831,9 @@ export class ServiceDictInfo<
   constructor(languages: Languages) {
     this.languages = languages;
   }
-  endpoint<Endpoint>(
+  endpoint<Endpoint extends { [key: string]: EndpointInfo }>(
     translate: (fn: (trans: Languages) => FunctionTranslation<Languages>) => {
-      [K in keyof Endpoint]: Endpoint[K] extends EndpointInfo<any, any, infer ArgNames, any, any, any, any, any, any>
-        ? FunctionTranslation<Languages, ArgNames[number]>
-        : never;
+      [K in keyof Endpoint]: FunctionTranslation<Languages, Endpoint[K]["argNames"][number]>;
     }
   ) {
     Object.assign(this.endpointDictionary, translate(fn)) as unknown as {

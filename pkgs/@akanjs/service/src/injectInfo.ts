@@ -1,4 +1,5 @@
 import type { BackendEnv, Cls } from "@akanjs/base";
+import type { ServerSignalCls } from "../../signal/src";
 
 interface InjectBuilderOptions<ReturnType> {
   generateFactory?: (options: any) => ReturnType;
@@ -8,7 +9,7 @@ export type InjectType = "database" | "service" | "use" | "env" | "generate" | "
 
 export const INJECT_META_KEY = Symbol("inject");
 
-export class InjectInfo<ReturnType> {
+export class InjectInfo<ReturnType = any> {
   type: InjectType;
   generateFactory: (options: any) => ReturnType;
   additionalPropKeys: string[];
@@ -63,8 +64,8 @@ export const injectionBuilder = {
 
 export type InjectBuilder<BuildType extends InjectType = InjectType> = (
   builder: Pick<typeof injectionBuilder, BuildType>
-) => { [key: string]: InjectInfo<any> };
+) => { [key: string]: InjectInfo };
 
-export type ExtractInjectInfoObject<InjectInfoMap extends { [key: string]: InjectInfo<any> }> = {
-  [K in keyof InjectInfoMap]: InjectInfoMap[K] extends InjectInfo<infer ReturnType> ? ReturnType : never;
+export type ExtractInjectInfoObject<InjectInfoMap extends { [key: string]: InjectInfo }> = {
+  [K in keyof InjectInfoMap]: ReturnType<InjectInfoMap[K]["generateFactory"]>;
 };

@@ -1,4 +1,3 @@
-export * from "./serviceDecorators";
 export * from "./base.service";
 export * from "./serviceRegistry";
 export * from "./serviceModule";

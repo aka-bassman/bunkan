@@ -5,6 +5,7 @@ import { srv } from "@akanjs/service";
 import { serverSignal } from "./serverSignal";
 import { internal } from "./internal";
 import { endpoint } from "./endpoint";
+import { SignalRegistry } from "./signalRegistry";
 
 export class BaseInternal extends internal(srv.base, ({ interval }) => ({
   publishPing: interval(3000).exec(function () {
@@ -67,3 +68,4 @@ export class BaseEndpoint extends endpoint(srv.base, ({ query, mutation, message
 })) {}
 
 export class Base extends serverSignal(BaseEndpoint, BaseInternal) {}
+SignalRegistry.register(BaseInternal, BaseEndpoint);

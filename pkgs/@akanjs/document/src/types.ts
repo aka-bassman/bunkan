@@ -1,6 +1,7 @@
 import type { EnumInstance, GetStateObject, Cls } from "@akanjs/base";
-import type { Document, ProjectionType } from "mongoose";
+import type { Document, HydratedDocument, ProjectionType, Schema } from "mongoose";
 import type { FilterInfo } from ".";
+import type { DocumentModel } from "@akanjs/constant";
 
 export type DataInputOf<Input, Obj> = {
   [K in keyof Input as K extends K ? K : never]: Input[K] extends any[] ? Input[K] | undefined : Input[K];
@@ -17,7 +18,7 @@ export type GetDocObject<D> = GetStateObject<Omit<D, Exclude<keyof Document, "id
 // }
 
 export interface ConstantFilterMeta {
-  query: { [key: string]: FilterInfo<any, any, any> };
+  query: { [key: string]: FilterInfo };
   sort: { [key: string]: any };
 }
 export interface FilterKeyProps {
@@ -52,3 +53,5 @@ export interface FindQueryOption<Sort, Obj> {
   sample?: boolean;
   select?: ProjectionType<Obj>;
 }
+
+export type SchemaOf<Mdl, Doc> = Schema<null, Mdl, Doc, undefined, null, Mdl>;

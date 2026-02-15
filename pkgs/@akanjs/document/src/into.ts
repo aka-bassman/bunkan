@@ -1,35 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { type MergeAllActionTypes, type PromiseOrObject, type Cls } from "@akanjs/base";
-import {
-  FIELD_META,
-  BaseObject,
-  type ConstantCls,
-  type ConstantModel,
-  type DocumentModel,
-  type QueryOf,
-} from "@akanjs/constant";
+import { type ConstantModel, type DocumentModel, type QueryOf } from "@akanjs/constant";
 import type { HydratedDocument, Model as MongooseModel, PipelineStage, ProjectionType, Schema } from "mongoose";
 
 import type { ExtractQuery, ExtractSort, FilterCls, FilterInstance } from ".";
 import type { DatabaseModel } from "./database";
-import {
-  type ExtractLoaderInfoObject,
-  type LoaderBuilder,
-  makeLoaderBuilder,
-  LOADER_META_KEY,
-  type ModelCls,
-} from "./loaderInfo";
-
-export interface DefaultDocMtds<TDocument> {
-  refresh(): Promise<this>;
-  set(data: Partial<TDocument>): this;
-  save(): Promise<this>;
-}
-type HydratedDocumentWithId<TDocument> = Omit<
-  HydratedDocument<TDocument, DefaultDocMtds<TDocument>>,
-  "id" | "set" | "save"
-> & { id: string } & DefaultDocMtds<TDocument>;
-export type Doc<M> = HydratedDocumentWithId<DocumentModel<M>>;
+import { type LoaderBuilder, makeLoaderBuilder, LOADER_META_KEY, type ModelCls } from "./loaderInfo";
 
 export type CRUDEventType = "create" | "update" | "remove";
 export type SaveEventType = "save" | CRUDEventType;
@@ -64,14 +39,10 @@ interface DefaultMdlStats<
     listener: (doc: TDocument, type: CRUDEventType) => PromiseOrObject<void>
   ) => () => void;
 }
-export type Mdl<Doc extends HydratedDocument<any>, Raw> = MongooseModel<Raw, unknown, unknown, unknown, Doc> &
+export type Mdl<Doc extends HydratedDocument, Raw> = MongooseModel<Raw, unknown, unknown, unknown, Doc> &
   DefaultMdlStats<Doc, DocumentModel<Raw>>;
-export type SchemaOf<Mdl, Doc> = Schema<null, Mdl, Doc, undefined, null, Mdl>;
-export interface BaseMiddleware {
-  onSchema: (schema: SchemaOf<any, any>) => void;
-}
 
-const Model = <
+export const into = <
   Doc,
   Filter extends FilterInstance,
   T extends string,
@@ -127,25 +98,4 @@ const Model = <
     [LOADER_META_KEY]: loaderInfoMap,
   });
   return DefaultModel as any;
-};
-export const into = Model;
-
-export const by = <
-  Model,
-  AddDbModels extends ConstantCls[],
-  _DocModel = Model extends BaseObject ? Doc<Model> : DocumentModel<Model>,
->(
-  modelRef: ConstantCls<Model>,
-  ...addRefs: AddDbModels
-): Cls<MergeAllActionTypes<AddDbModels, keyof _DocModel & string> & _DocModel> => {
-  Object.assign(modelRef[FIELD_META], ...addRefs.map((addRef) => addRef[FIELD_META]));
-  return modelRef as any;
-};
-
-export const beyond = <DbModel, Doc>(model: Cls<DbModel>, doc: Cls<Doc>) => {
-  return class Middleware {
-    onSchema(schema: SchemaOf<DbModel, Doc>) {
-      //
-    }
-  };
 };

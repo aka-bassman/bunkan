@@ -9,7 +9,7 @@ import {
 } from "@akanjs/service";
 import { Logger } from "@akanjs/common";
 
-export type InterceptorCls<Methods = {}, InjectMap extends { [key: string]: InjectInfo<any> } = {}> = Cls<
+export type InterceptorCls<Methods = {}, InjectMap extends { [key: string]: InjectInfo } = {}> = Cls<
   Methods &
     ExtractInjectInfoObject<InjectMap> & {
       readonly logger: Logger;

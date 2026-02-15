@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { BaseInsight, BaseObject, type GetStateObject, type MergedValues } from "@akanjs/base";
-import { FilterInfo, FilterInstance } from "@akanjs/document";
+import { type GetStateObject, type MergedValues } from "@akanjs/base";
+import { FilterInfo, type FilterInstance } from "@akanjs/document";
 import { EndpointInfo, SliceInfo } from "@akanjs/signal";
 
 import { ModelDictInfo, ScalarDictInfo, ServiceDictInfo } from ".";
+import type { BaseInsight, BaseObject } from "@akanjs/constant";
 
 interface Trans {
   t: string;
@@ -27,15 +28,12 @@ type FilterTranslatorKey<Filter extends FilterInstance> = {
           : never
         : never);
 }[keyof Filter["query"] & string];
-type EndpointTranslatorKey<Endpoint> = {
+type EndpointTranslatorKey<Endpoint extends { [key: string]: EndpointInfo }> = {
   [Key in keyof Endpoint & string]:
     | `${Key}`
     | `${Key}.desc`
-    | (Endpoint[Key] extends EndpointInfo<any, any, infer ArgNames, any, any, any, any, any, any>
-        ? ArgNames[number] extends string
-          ? `${Key}.arg.${ArgNames[number]}` | `${Key}.arg.${ArgNames[number]}.desc`
-          : never
-        : never);
+    | `${Key}.arg.${Endpoint[Key]["argNames"][number]}`
+    | `${Key}.arg.${Endpoint[Key]["argNames"][number]}.desc`;
 }[keyof Endpoint & string];
 type SliceTranslatorKey<Slice> = {
   [Key in keyof Slice & string]: Slice[Key] extends SliceInfo<
@@ -88,8 +86,8 @@ export type ModelTrans<
   Model extends BaseObject,
   Insight extends BaseInsight,
   Filter extends FilterInstance,
-  Slice,
-  Endpoint,
+  Slice extends { [key: string]: SliceInfo },
+  Endpoint extends { [key: string]: EndpointInfo },
   ErrorKey extends string,
   EtcKey extends string,
 > = {
@@ -104,14 +102,10 @@ export type ModelTrans<
   };
   sort: { [K in keyof Filter["sort"]]: FieldTrans };
   api: {
-    [K in keyof Endpoint]: Endpoint[K] extends EndpointInfo<any, any, infer ArgNames, any, any, any, any, any, any>
-      ? FnTrans<ArgNames[number]>
-      : never;
+    [K in keyof Endpoint]: FnTrans<Endpoint[K]["argNames"][number]>;
   } & BaseModelCrudGetApiTrans<T> &
     MergedValues<{
-      [K in keyof Slice]: Slice[K] extends SliceInfo<infer T, any, any, any, any, infer ArgNames, any, any, any>
-        ? SliceApiTrans<T, K & string, ArgNames[number]>
-        : never;
+      [K in keyof Slice]: SliceApiTrans<Slice[K]["refName"], K & string, Slice[K]["argNames"][number]>;
     }>;
   error: { [K in ErrorKey]: Trans };
 } & { [K in EtcKey]: Trans };
@@ -120,8 +114,8 @@ export type ModelTranslatorKey<
   Model,
   Insight,
   Filter extends FilterInstance,
-  Slice,
-  Endpoint,
+  Slice extends { [key: string]: SliceInfo },
+  Endpoint extends { [key: string]: EndpointInfo },
   EtcKey extends string,
 > =
   | `${T}.modelName`
@@ -145,17 +139,22 @@ export type ScalarTranslatorKey<T extends string, Model, EtcKey extends string> 
   | `${T}.${keyof GetStateObject<Model> & string}${"" | ".desc"}`
   | `${T}.${EtcKey}`;
 
-export type ServiceTrans<T extends string, Endpoint, ErrorKey extends string, EtcKey extends string> = {
+export type ServiceTrans<
+  T extends string,
+  Endpoint extends { [key: string]: EndpointInfo },
+  ErrorKey extends string,
+  EtcKey extends string,
+> = {
   api: {
-    [K in keyof Endpoint]: Endpoint[K] extends EndpointInfo<any, any, infer ArgNames, any, any, any, any, any, any>
-      ? FnTrans<ArgNames[number]>
-      : never;
+    [K in keyof Endpoint]: FnTrans<Endpoint[K]["argNames"][number]>;
   };
   error: { [K in ErrorKey]: Trans };
 } & { [K in EtcKey]: Trans };
-export type ServiceTranslatorKey<T extends string, Endpoint, EtcKey extends string> =
-  | `${T}.signal.${EndpointTranslatorKey<Endpoint>}`
-  | `${T}.${EtcKey}`;
+export type ServiceTranslatorKey<
+  T extends string,
+  Endpoint extends { [key: string]: EndpointInfo },
+  EtcKey extends string,
+> = `${T}.signal.${EndpointTranslatorKey<Endpoint>}` | `${T}.${EtcKey}`;
 
 export type EnumTrans<EnumValue extends string | number> = {
   [key in EnumValue]: Trans;
@@ -173,8 +172,8 @@ export const registerModelTrans = <
   Model extends BaseObject,
   Insight extends BaseInsight,
   Filter extends FilterInstance,
-  Slice,
-  Endpoint,
+  Slice extends { [key: string]: SliceInfo },
+  Endpoint extends { [key: string]: EndpointInfo },
   ModelDict extends ModelDictInfo<any>,
 >(
   modelDict: ModelDict
@@ -195,7 +194,7 @@ export const registerScalarTrans = <T extends string, Model, ScalarDict>(
   return { dict: scalarDict } as any;
 };
 
-export const registerServiceTrans = <T extends string, Endpoint, ServiceDict>(
+export const registerServiceTrans = <T extends string, Endpoint extends { [key: string]: EndpointInfo }, ServiceDict>(
   serviceDict: ServiceDict
 ): ServiceDict extends ServiceDictInfo<any, any, infer ErrorKey, infer EtcKey>
   ? DictModule<ServiceTranslatorKey<T, Endpoint, EtcKey>, `${T}.error.${ErrorKey}`>

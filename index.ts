@@ -1,9 +1,9 @@
-import { baseEnv, Int, Float, PrimitiveScalar, enumOf, dayjs } from "@akanjs/base";
+import { baseEnv, Int, Float, PrimitiveScalar, enumOf, dayjs, ID } from "@akanjs/base";
 import { Logger } from "@akanjs/common";
 import { ConstantRegistry, via } from "@akanjs/constant";
 import { DatabaseRegistry, FILTER_META_KEY, beyond, by, from, into, type SchemaOf } from "@akanjs/document";
 import { INJECT_META_KEY, ServiceModule, adapt, serve } from "@akanjs/service";
-import { internal, slice, endpoint, SLICE_META_KEY } from "@akanjs/signal";
+import { internal, slice, endpoint, SLICE_META_KEY, serverSignal, SignalRegistry } from "@akanjs/signal";
 
 Logger.info("Hello, world!");
 
@@ -109,11 +109,13 @@ export const dbAdmin = DatabaseRegistry.buildModel(
   AdminFilter
 );
 
-export class AdminService extends serve(dbAdmin, ({ use, service }) => ({
+export class AdminService extends serve(dbAdmin, ({ use, service, signal }) => ({
   authorizer: use<Authorizer>(),
+  adminSignal: signal<AdminServeSignal>(),
 })) {
   test() {
     this.authorizer.test();
+    this.adminSignal.archiveAdmin("1");
   }
 }
 
@@ -121,12 +123,22 @@ const srv = {
   admin: new ServiceModule("admin", AdminService, admin),
 };
 
-export class AdminInternal extends internal(srv.admin, ({ initialize }) => ({
+export class AdminInternal extends internal(srv.admin, ({ initialize, process }) => ({
   initializeAdmin: initialize().exec(async function () {
     this.adminService.test();
   }),
+  archiveAdmin: process(Int)
+    .msg("adminId", ID)
+    .exec(async function (adminId, job) {
+      return await Promise.resolve(1);
+    }),
 })) {}
 
 export class AdminSlice extends slice(srv.admin, {}, () => ({})) {}
 
 export class AdminEndpoint extends endpoint(srv.admin, ({ query, mutation, pubsub, message }) => ({})) {}
+
+export class AdminServeSignal extends serverSignal(AdminEndpoint, AdminInternal) {}
+
+SignalRegistry.register(AdminInternal, AdminEndpoint, AdminSlice);
+console.log(AdminServeSignal);

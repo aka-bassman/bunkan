@@ -7,11 +7,11 @@ type LoaderType = "field" | "arrayField" | "query";
 
 export const LOADER_META_KEY = Symbol("loader");
 
-export type ModelCls<Statics = {}, LoaderMap extends { [key: string]: LoaderInfo<any, any, any> } = {}> = Cls<
+export type ModelCls<Statics = {}, LoaderMap extends { [key: string]: LoaderInfo } = {}> = Cls<
   Statics & ExtractLoaderInfoObject<LoaderMap>,
   { [LOADER_META_KEY]: LoaderMap }
 >;
-export class LoaderInfo<Doc, Key extends keyof Doc, QueryArg = Doc[Key]> {
+export class LoaderInfo<Doc = any, Key extends keyof Doc = keyof Doc, QueryArg = Doc[Key]> {
   type: LoaderType;
   field: Key | Key[];
   defaultQuery: QueryOf<unknown>;
@@ -36,13 +36,13 @@ export type LoaderBuilder<Doc = any> = (builder: ReturnType<typeof makeLoaderBui
   [key: string]: LoaderInfo<Doc, any, any>;
 };
 
-export type ExtractLoaderInfoObject<LoaderInfoMap extends { [key: string]: LoaderInfo<any, any, any> }> = {
+export type ExtractLoaderInfoObject<LoaderInfoMap extends { [key: string]: LoaderInfo }> = {
   [K in keyof LoaderInfoMap]: LoaderInfoMap[K] extends LoaderInfo<infer Doc, any, infer QueryArg>
     ? Loader<QueryArg, Doc>
     : never;
 };
 
-export const getLoaderInfos = (modelRef: ModelCls): { [key: string]: LoaderInfo<any, any, any> } => {
+export const getLoaderInfos = (modelRef: ModelCls): { [key: string]: LoaderInfo } => {
   const loaderInfos = modelRef[LOADER_META_KEY];
   if (!loaderInfos) throw new Error(`No loader infos for modelRef: ${modelRef}`);
   return loaderInfos;

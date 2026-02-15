@@ -31,11 +31,7 @@ export type DefaultOf<S> = GetStateObject<{ [K in keyof S]: FieldState<S[K]> }>;
 
 export type GetPlainObject<T, O extends string> = Omit<
   {
-    [K in keyof T as T[K] extends (...args: any) => any
-      ? never
-      : K extends keyof HydratedDocument<any>
-        ? never
-        : K]: T[K];
+    [K in keyof T as T[K] extends (...args: any) => any ? never : K extends keyof HydratedDocument ? never : K]: T[K];
   },
   O
 >;

@@ -6,9 +6,7 @@ export const ENDPOINT_META_KEY = Symbol("endpoint");
 
 export interface EndpointCls<
   SrvModule extends ServiceModule = ServiceModule,
-  EndpointInfoObj extends { [key: string]: EndpointInfo<any, any, any, any, any, any, any, any, any> } = {
-    [key: string]: EndpointInfo<any, any, any, any, any, any, any, any, any>;
-  },
+  EndpointInfoObj extends { [key: string]: EndpointInfo } = { [key: string]: EndpointInfo },
 > extends Cls<
   any,
   {

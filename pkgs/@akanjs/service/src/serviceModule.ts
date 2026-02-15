@@ -6,7 +6,7 @@ import { lowerlize } from "@akanjs/common";
 export class ServiceModule<
   RefName extends string = string,
   Srv extends ServiceCls = ServiceCls,
-  CnstModel extends ConstantModel<RefName, any, any, any, any, any> = ConstantModel<RefName, any, any, any, any, any>,
+  CnstModel extends ConstantModel<RefName> = ConstantModel<RefName>,
   SrvMap extends { [key: string]: any } = { [K in `${Uncapitalize<RefName>}Service`]: UnCls<Srv> },
 > {
   refName: RefName;

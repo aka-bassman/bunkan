@@ -65,7 +65,7 @@ export class ServiceRegistry {
   static createModelService<
     T extends string,
     Input,
-    Doc extends HydratedDocument<any>,
+    Doc extends HydratedDocument,
     Model extends DatabaseModel<
       T,
       Input,
@@ -241,73 +241,43 @@ export class ServiceRegistry {
       const queryFn = filterInfo.queryFn;
       if (!queryFn) throw new Error(`No query function for key: ${queryKey}`);
       Object.assign(DbService.prototype, {
-        [`list${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<T, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`list${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__list(query, queryOption);
         },
-        [`listIds${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`listIds${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__listIds(query, queryOption);
         },
-        [`find${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`find${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__find(query, queryOption);
         },
-        [`findId${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`findId${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__findId(query, queryOption);
         },
-        [`pick${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`pick${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__pick(query, queryOption);
         },
-        [`pickId${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`pickId${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__pickId(query, queryOption);
         },
-        [`exists${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<T, any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`exists${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__exists(query);
         },
-        [`count${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`count${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__count(query);
         },
-        [`insight${capitalize(queryKey)}`]: async function (
-          this: DatabaseService<any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`insight${capitalize(queryKey)}`]: async function (this: DatabaseService, ...args: any) {
           const { query, queryOption } = getQueryDataFromKey(queryKey, args);
           return this.__insight(query);
         },
-        [`query${capitalize(queryKey)}`]: function (
-          this: DatabaseService<any, any, any, any, any, any, any>,
-          ...args: any
-        ) {
+        [`query${capitalize(queryKey)}`]: function (this: DatabaseService, ...args: any) {
           return queryFn(...args);
         },
       });

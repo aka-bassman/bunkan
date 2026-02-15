@@ -9,8 +9,7 @@ export class BaseService extends serve("base" as const, ({ generate, signal }) =
   baseSignal: signal<Base>(),
 })) {
   publishPing() {
-    // TODO: Revive this
-    // this.baseSignal.pubsubPing("ping");
+    this.baseSignal.pubsubPing("ping");
   }
   async cleanup() {
     if (!this.onCleanup) throw new Error("onCleanup is not defined");

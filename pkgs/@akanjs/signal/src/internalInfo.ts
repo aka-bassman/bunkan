@@ -14,13 +14,13 @@ interface InternalArgProps<Nullable extends boolean = false> {
 }
 
 export class InternalInfo<
-  ReqType extends InternalType,
+  ReqType extends InternalType = InternalType,
   Srvs extends { [key: string]: any } = { [key: string]: any },
-  Args extends any[] = [],
-  InternalArgs extends any[] = [],
-  DefaultArgs extends any[] = [],
+  Args extends any[] = any,
+  InternalArgs extends any[] = any,
+  DefaultArgs extends any[] = any,
   Returns extends ConstantFieldTypeInput = ConstantFieldTypeInput,
-  Nullable extends boolean = false,
+  Nullable extends boolean = boolean,
 > {
   readonly type: ReqType;
   readonly args: {
@@ -126,9 +126,7 @@ export type BuildInternal<SrvModule extends ServiceModule, Parent extends Docume
 
 export type InternalBuilder<SrvModule extends ServiceModule> = (
   builder: BuildInternal<SrvModule, Doc<NonNullable<SrvModule["cnst"]>["full"]>>
-) => {
-  [key: string]: InternalInfo<any, any, any, any, any, any, any>;
-};
+) => { [key: string]: InternalInfo };
 
 export const buildInternal = {
   resolveField: (returnRef: Cls, signalOption?: SignalOption) =>

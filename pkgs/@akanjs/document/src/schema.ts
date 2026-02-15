@@ -6,8 +6,9 @@ import { dayjs, type PromiseOrObject } from "@akanjs/base";
 import { isValidDate } from "@akanjs/common";
 import { isValidObjectId, type PipelineStage, type ProjectionType, Types } from "mongoose";
 
-import { type CRUDEventType, type Doc, type Mdl, type SaveEventType } from "./dbDecorators";
+import { type CRUDEventType, type Mdl, type SaveEventType } from "./into";
 import type { QueryOf } from "@akanjs/constant";
+import type { Doc } from "./by";
 
 export const getDefaultSchemaOptions = <TSchema, TDocument>() => ({
   toJSON: { getters: false, virtuals: true },

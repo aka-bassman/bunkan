@@ -17,7 +17,8 @@ import type { HydratedDocument, Model as MongooseModel } from "mongoose";
 import type { RedisClientType, SetOptions } from "redis";
 
 import { createArrayLoader, createLoader, createQueryLoader } from "./dataLoader";
-import type { BaseMiddleware, CRUDEventType, Mdl, SaveEventType } from "./dbDecorators";
+import type { BaseMiddleware } from "./beyond";
+import type { CRUDEventType, Mdl, SaveEventType } from "./into";
 import type { Database } from "./databaseRegistry";
 import {
   getFilterSortByKey,
@@ -244,12 +245,12 @@ type DatabaseModelWithQuerySort<
 } & QueryMethodPart<Query, Sort, Obj, Doc, Insight, _FindQueryOption, _ListQueryOption, _QueryOfDoc>;
 
 export type DatabaseModel<
-  T extends string,
-  Input,
-  Doc,
-  Obj,
-  Insight,
-  Filter extends FilterInstance,
+  T extends string = string,
+  Input = any,
+  Doc = any,
+  Obj = any,
+  Insight = any,
+  Filter extends FilterInstance = FilterInstance,
   _CapitalizedT extends string = Capitalize<T>,
   _QueryOfDoc = QueryOf<Doc>,
   _Query = ExtractQuery<Filter>,
@@ -273,11 +274,11 @@ export type DatabaseModel<
 >;
 
 export class DatabaseModelRegistry {
-  static #modelMap = new Map<string, Cls<DatabaseModel<string, any, any, any, any, any>>>();
+  static #modelMap = new Map<string, Cls<DatabaseModel>>();
   static build<
     T extends string,
     Input,
-    Doc extends HydratedDocument<any>,
+    Doc extends HydratedDocument,
     Model extends Mdl<any, any>,
     Middleware extends BaseMiddleware,
     Insight,
@@ -346,7 +347,7 @@ export class DatabaseModelRegistry {
         readonly __model: Mdl<any, any> = model;
         readonly __cache: CacheDatabase = cacheDatabase;
         readonly __searcher: SearchDatabase = searchDatabase;
-        readonly __loader: DataLoader<string, HydratedDocument<any>, string> = loader;
+        readonly __loader: DataLoader<string, HydratedDocument, string> = loader;
         async __list(query?: QueryOf<Doc>, queryOption?: ListQueryOption<Sort, Obj>): Promise<Doc[]> {
           const { find, sort, skip, limit, select, sample } = getListQuery(query, queryOption);
           return sample
@@ -567,13 +568,17 @@ export class DatabaseModelRegistry {
     Object.entries(loaderInfos).forEach(([key, loaderInfo]) => {
       const loader =
         loaderInfo.type === "field"
-          ? createLoader(model as unknown as MongooseModel<any>, loaderInfo.field, loaderInfo.defaultQuery)
+          ? createLoader(model as unknown as MongooseModel<any>, loaderInfo.field as string, loaderInfo.defaultQuery)
           : loaderInfo.type === "arrayField"
-            ? createArrayLoader(model as unknown as MongooseModel<any>, loaderInfo.field, loaderInfo.defaultQuery)
+            ? createArrayLoader(
+                model as unknown as MongooseModel<any>,
+                loaderInfo.field as string,
+                loaderInfo.defaultQuery
+              )
             : loaderInfo.type === "query"
               ? createQueryLoader(
                   model as unknown as MongooseModel<any>,
-                  loaderInfo.field ?? [],
+                  (loaderInfo.field ?? []) as string[],
                   loaderInfo.defaultQuery
                 )
               : null;
@@ -582,7 +587,7 @@ export class DatabaseModelRegistry {
     Object.getOwnPropertyNames(database.Model.prototype).forEach((key) => {
       DatabaseModel.prototype[key] = database.Model.prototype[key];
     });
-    this.#modelMap.set(database.refName, DatabaseModel as Cls<DatabaseModel<string, any, any, any, any, any>>);
+    this.#modelMap.set(database.refName, DatabaseModel as Cls<DatabaseModel>);
     return new DatabaseModel() as DatabaseModel<T, Input, Doc, Model, Insight, Filter>;
   }
 }
