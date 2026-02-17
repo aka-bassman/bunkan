@@ -2,24 +2,38 @@ import type { InternalCls } from "./internal";
 import type { SliceCls } from "./slice";
 import type { EndpointCls } from "./endpoint";
 
-export class SignalRegistry {
-  static readonly #internal = new Map<string, InternalCls>();
-  static readonly #slice = new Map<string, SliceCls>();
-  static readonly #endpoint = new Map<string, EndpointCls>();
+export interface DatabaseSignal {
+  internal: InternalCls;
+  endpoint: EndpointCls;
+  slice: SliceCls;
+}
 
-  static register(internal: InternalCls, endpoint: EndpointCls, slice?: SliceCls) {
-    this.#internal.set(internal.refName, internal);
-    this.#endpoint.set(endpoint.refName, endpoint);
-    if (slice) this.#slice.set(slice.refName, slice);
+export interface ServiceSignal {
+  internal: InternalCls;
+  endpoint: EndpointCls;
+}
+
+// TODO: add scalar signal for resolve field
+// export interface ScalarSignal {
+//   internal: InternalCls;
+// }
+
+export class SignalRegistry {
+  static readonly #database = new Map<string, DatabaseSignal>();
+  static readonly #service = new Map<string, ServiceSignal>();
+
+  static registerDatabase(internal: InternalCls, endpoint: EndpointCls, slice: SliceCls) {
+    this.#database.set(internal.refName, { internal, endpoint, slice });
     return this;
   }
-  static getInternal(refName: string) {
-    return this.#internal.get(refName);
+  static getDatabase(refName: string) {
+    return this.#database.get(refName);
   }
-  static getEndpoint(refName: string) {
-    return this.#endpoint.get(refName);
+  static registerService(internal: InternalCls, endpoint: EndpointCls) {
+    this.#service.set(internal.refName, { internal, endpoint });
+    return this;
   }
-  static getSlice(refName: string) {
-    return this.#slice.get(refName);
+  static getService(refName: string) {
+    return this.#service.get(refName);
   }
 }

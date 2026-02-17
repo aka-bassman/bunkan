@@ -358,7 +358,9 @@ export type SliceBuilder<
   _Light = NonNullable<SrvModule["cnst"]>["light"],
   _Insight = NonNullable<SrvModule["cnst"]>["insight"],
 > = (
-  init: (signalOption?: SignalOption) => SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>
+  init: (
+    signalOption?: SignalOption
+  ) => SliceInfo<SrvModule["srv"]["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>
 ) => {
-  [key: string]: SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>;
+  [key: string]: SliceInfo<SrvModule["srv"]["refName"], _Full, _Light, _Insight, SrvModule["srvMap"]>;
 };

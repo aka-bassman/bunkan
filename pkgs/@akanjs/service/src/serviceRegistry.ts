@@ -8,7 +8,7 @@ import {
   type CRUDEventType,
   type DataInputOf,
   type Database,
-  type DatabaseModel,
+  type DatabaseModelAdaptor,
   type ExtractQuery,
   type ExtractSort,
   type FilterInstance,
@@ -66,7 +66,7 @@ export class ServiceRegistry {
     T extends string,
     Input,
     Doc extends HydratedDocument,
-    Model extends DatabaseModel<
+    Model extends DatabaseModelAdaptor<
       T,
       Input,
       Doc,

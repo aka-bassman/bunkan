@@ -23,15 +23,6 @@ const colorizeMap: { [key in LogLevel]: (text: string) => string } = {
 };
 
 export class Logger {
-  static #ignoreCtxSet = new Set([
-    "InstanceLoader",
-    "RoutesResolver",
-    "RouterExplorer",
-    "NestFactory",
-    "WebSocketsController",
-    "GraphQLModule",
-    "NestApplication",
-  ]);
   static level: LogLevel = (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel | undefined) ?? "log";
   static #levelIdx = logLevels.findIndex((l) => l === (process.env.NEXT_PUBLIC_LOG_LEVEL ?? "log"));
   static #startAt = dayjs();
@@ -47,26 +38,26 @@ export class Logger {
   constructor(name?: string) {
     this.name = name;
   }
-  trace(msg: string, context = "") {
-    if (Logger.#levelIdx <= 0) Logger.#printMessages(this.name ?? "App", msg, context, "trace");
+  trace(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 0) Logger.#printMessages(name, msg, context, "trace");
   }
-  verbose(msg: string, context = "") {
-    if (Logger.#levelIdx <= 1) Logger.#printMessages(this.name ?? "App", msg, context, "verbose");
+  verbose(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 1) Logger.#printMessages(name, msg, context, "verbose");
   }
-  debug(msg: string, context = "") {
-    if (Logger.#levelIdx <= 2) Logger.#printMessages(this.name ?? "App", msg, context, "debug");
+  debug(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 2) Logger.#printMessages(name, msg, context, "debug");
   }
-  log(msg: string, context = "") {
-    if (Logger.#levelIdx <= 3) Logger.#printMessages(this.name ?? "App", msg, context, "log");
+  log(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 3) Logger.#printMessages(name, msg, context, "log");
   }
-  info(msg: string, context = "") {
-    if (Logger.#levelIdx <= 4) Logger.#printMessages(this.name ?? "App", msg, context, "info");
+  info(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 4) Logger.#printMessages(name, msg, context, "info");
   }
-  warn(msg: string, context = "") {
-    if (Logger.#levelIdx <= 5) Logger.#printMessages(this.name ?? "App", msg, context, "warn");
+  warn(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 5) Logger.#printMessages(name, msg, context, "warn");
   }
-  error(msg: string, context = "") {
-    if (Logger.#levelIdx <= 6) Logger.#printMessages(this.name ?? "App", msg, context, "error");
+  error(msg: string, context = "", name = this.name ?? "App") {
+    if (Logger.#levelIdx <= 6) Logger.#printMessages(name, msg, context, "error");
   }
   raw(msg: string, method?: "console" | "process") {
     Logger.rawLog(msg, method);
@@ -74,26 +65,26 @@ export class Logger {
   rawLog(msg: string, method?: "console" | "process") {
     Logger.rawLog(msg, method);
   }
-  static trace(msg: string, context = "") {
-    if (Logger.#levelIdx <= 0) Logger.#printMessages("App", msg, context, "trace");
+  static trace(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 0) Logger.#printMessages(name, msg, context, "trace");
   }
-  static verbose(msg: string, context = "") {
-    if (Logger.#levelIdx <= 1) Logger.#printMessages("App", msg, context, "verbose");
+  static verbose(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 1) Logger.#printMessages(name, msg, context, "verbose");
   }
-  static debug(msg: string, context = "") {
-    if (Logger.#levelIdx <= 2) Logger.#printMessages("App", msg, context, "debug");
+  static debug(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 2) Logger.#printMessages(name, msg, context, "debug");
   }
-  static log(msg: string, context = "") {
-    if (Logger.#levelIdx <= 3) Logger.#printMessages("App", msg, context, "log");
+  static log(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 3) Logger.#printMessages(name, msg, context, "log");
   }
-  static info(msg: string, context = "") {
-    if (Logger.#levelIdx <= 4) Logger.#printMessages("App", msg, context, "info");
+  static info(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 4) Logger.#printMessages(name, msg, context, "info");
   }
-  static warn(msg: string, context = "") {
-    if (Logger.#levelIdx <= 5) Logger.#printMessages("App", msg, context, "warn");
+  static warn(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 5) Logger.#printMessages(name, msg, context, "warn");
   }
-  static error(msg: string, context = "") {
-    if (Logger.#levelIdx <= 6) Logger.#printMessages("App", msg, context, "error");
+  static error(msg: string, context = "", name = "App") {
+    if (Logger.#levelIdx <= 6) Logger.#printMessages(name, msg, context, "error");
   }
   static #colorize(msg: string, logLevel: LogLevel) {
     return colorizeMap[logLevel](msg);
@@ -105,7 +96,6 @@ export class Logger {
     logLevel: LogLevel,
     writeStreamType: "stdout" | "stderr" = logLevel === "error" ? "stderr" : "stdout"
   ) {
-    if (this.#ignoreCtxSet.has(context)) return;
     const now = dayjs();
     const processMsg = this.#colorize(
       `[${name ?? "App"}] ${(global.process as unknown as NodeJS.Process | undefined)?.pid ?? "window"} -`,

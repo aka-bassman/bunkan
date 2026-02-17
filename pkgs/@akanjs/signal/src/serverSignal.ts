@@ -4,9 +4,14 @@ import { InternalInfo } from "./internalInfo";
 import { ENDPOINT_META_KEY, type EndpointCls } from "./endpoint";
 import { INTERNAL_META_KEY, type InternalCls } from "./internal";
 import type { DocumentModel, FieldToValue } from "@akanjs/constant";
-import type { Job, Queue } from "bull";
+import type { Job, Queue } from "bullmq";
 import type { ServerWebSocket } from "bun";
 import { adapt } from "@akanjs/service";
+
+export interface DefaultServerSignalMethods {
+  readonly websocket: ServerWebSocket;
+  readonly queue: Queue;
+}
 
 export type ServerSignalCls<
   EnpCls extends EndpointCls,
@@ -45,7 +50,7 @@ export type ServerSignalCls<
     >
       ? (...args: ServerArgs) => Promise<Job<FieldToValue<Returns>>>
       : never;
-  } & { websocket: ServerWebSocket; queue: Queue },
+  } & DefaultServerSignalMethods,
   {
     readonly refName: EnpCls["refName"];
     readonly [ENDPOINT_META_KEY]: _EndpointInfoObj;

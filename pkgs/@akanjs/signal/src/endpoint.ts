@@ -10,7 +10,7 @@ export interface EndpointCls<
 > extends Cls<
   any,
   {
-    refName: SrvModule["refName"];
+    refName: SrvModule["srv"]["refName"];
     srv: SrvModule;
     [ENDPOINT_META_KEY]: EndpointInfoObj;
   }
@@ -71,7 +71,7 @@ export function endpoint<
   const sigRef =
     libEndpoints.at(0) ??
     class Endpoint {
-      static refName = srv.refName;
+      static refName = srv.srv.refName;
       static srv = srv;
       static [ENDPOINT_META_KEY] = {};
     };

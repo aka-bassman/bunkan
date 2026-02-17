@@ -26,16 +26,17 @@ interface ServiceOptions {
 }
 export type ServiceType = "database" | "plain";
 
+export interface DefaultServiceMethods {
+  readonly logger: Logger;
+  readonly connection: Connection;
+}
+
 export type ServiceCls<
   RefName extends string = string,
   Methods = {},
   InjectMap extends { [key: string]: InjectInfo } = {},
 > = Cls<
-  Methods &
-    ExtractInjectInfoObject<InjectMap> & {
-      readonly logger: Logger;
-      readonly connection: Connection;
-    },
+  Methods & ExtractInjectInfoObject<InjectMap> & DefaultServiceMethods,
   {
     readonly refName: RefName;
     readonly type: ServiceType;

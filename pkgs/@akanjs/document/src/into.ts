@@ -2,8 +2,8 @@ import { type MergeAllActionTypes, type PromiseOrObject, type Cls } from "@akanj
 import { type ConstantModel, type DocumentModel, type QueryOf } from "@akanjs/constant";
 import type { HydratedDocument, Model as MongooseModel, PipelineStage, ProjectionType, Schema } from "mongoose";
 
-import type { ExtractQuery, ExtractSort, FilterCls, FilterInstance } from ".";
-import type { DatabaseModel } from "./database";
+import type { DatabaseCls, ExtractQuery, ExtractSort, FilterCls, FilterInstance } from ".";
+import type { DatabaseModelAdaptor } from "./database";
 import { type LoaderBuilder, makeLoaderBuilder, LOADER_META_KEY, type ModelCls } from "./loaderInfo";
 
 export type CRUDEventType = "create" | "update" | "remove";
@@ -51,7 +51,7 @@ export const into = <
   Full,
   Light,
   Insight,
-  AddDbModels extends Cls[],
+  AddDbModels extends DatabaseCls[],
   _CapitalizedT extends string,
   _Default,
   _DefaultInput,
@@ -64,7 +64,18 @@ export const into = <
   _QueryOfDoc,
   _Query = ExtractQuery<Filter>,
   _Sort = ExtractSort<Filter>,
-  _DatabaseModel = DatabaseModel<T, _DocInput, Doc, Full, Insight, Filter, _CapitalizedT, _QueryOfDoc, _Query, _Sort>,
+  _DatabaseModel = DatabaseModelAdaptor<
+    T,
+    _DocInput,
+    Doc,
+    Full,
+    Insight,
+    Filter,
+    _CapitalizedT,
+    _QueryOfDoc,
+    _Query,
+    _Sort
+  >,
   _LoaderBuilder extends LoaderBuilder<_Doc> = LoaderBuilder<_Doc>,
 >(
   docRef: Cls<Doc>,

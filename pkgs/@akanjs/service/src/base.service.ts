@@ -4,8 +4,8 @@ import { serve } from "./serve";
 import { ServiceRegistry } from "./serviceRegistry";
 import { ServiceModule } from "./serviceModule";
 
-export class BaseService extends serve("base" as const, ({ generate, signal }) => ({
-  onCleanup: generate<(() => Promise<void>) | undefined>((env) => env.onCleanup ?? undefined),
+export class BaseService extends serve("base" as const, ({ env, signal }) => ({
+  onCleanup: env(({ onCleanup }: { onCleanup?: () => Promise<void> }) => onCleanup),
   baseSignal: signal<Base>(),
 })) {
   publishPing() {
@@ -18,4 +18,4 @@ export class BaseService extends serve("base" as const, ({ generate, signal }) =
 }
 
 export const allSrvs = ServiceRegistry.register(BaseService);
-export const srv = { base: new ServiceModule("base", BaseService) };
+export const srv = { base: new ServiceModule(BaseService) };

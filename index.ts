@@ -4,6 +4,7 @@ import { ConstantRegistry, via } from "@akanjs/constant";
 import { DatabaseRegistry, FILTER_META_KEY, beyond, by, from, into, type SchemaOf } from "@akanjs/document";
 import { INJECT_META_KEY, ServiceModule, adapt, serve } from "@akanjs/service";
 import { internal, slice, endpoint, SLICE_META_KEY, serverSignal, SignalRegistry } from "@akanjs/signal";
+import { AkanApp, akan } from "@akanjs/server";
 
 Logger.info("Hello, world!");
 
@@ -120,12 +121,12 @@ export class AdminService extends serve(dbAdmin, ({ use, service, signal }) => (
 }
 
 const srv = {
-  admin: new ServiceModule("admin", AdminService, admin),
+  admin: new ServiceModule(AdminService, admin),
 };
 
 export class AdminInternal extends internal(srv.admin, ({ initialize, process }) => ({
   initializeAdmin: initialize().exec(async function () {
-    this.adminService.test();
+    //
   }),
   archiveAdmin: process(Int)
     .msg("adminId", ID)
@@ -140,5 +141,8 @@ export class AdminEndpoint extends endpoint(srv.admin, ({ query, mutation, pubsu
 
 export class AdminServeSignal extends serverSignal(AdminEndpoint, AdminInternal) {}
 
-SignalRegistry.register(AdminInternal, AdminEndpoint, AdminSlice);
+SignalRegistry.registerDatabase(AdminInternal, AdminEndpoint, AdminSlice);
 console.log(AdminServeSignal);
+
+const app = new AkanApp();
+app.start();

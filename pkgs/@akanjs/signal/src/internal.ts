@@ -6,7 +6,7 @@ export const INTERNAL_META_KEY = Symbol("internalApi");
 export type InternalCls<
   SrvModule extends ServiceModule = ServiceModule,
   InternalInfoMap extends { [key: string]: InternalInfo } = { [key: string]: InternalInfo },
-> = Cls<any, { refName: SrvModule["refName"]; srv: SrvModule; [INTERNAL_META_KEY]: InternalInfoMap }>;
+> = Cls<any, { refName: SrvModule["srv"]["refName"]; srv: SrvModule; [INTERNAL_META_KEY]: InternalInfoMap }>;
 
 export function internal<
   SrvModule extends ServiceModule,
@@ -20,7 +20,7 @@ export function internal<
   const sigRef: InternalCls =
     libInternals.at(0) ??
     class Internal {
-      static refName = srv.refName;
+      static refName = srv.srv.refName;
       static srv = srv;
       static [INTERNAL_META_KEY] = {};
     };

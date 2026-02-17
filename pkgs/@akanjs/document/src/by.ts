@@ -1,6 +1,8 @@
 import { type MergeAllActionTypes, type Cls } from "@akanjs/base";
-import { FIELD_META, BaseObject, type ConstantCls, type DocumentModel } from "@akanjs/constant";
+import { FIELD_META, BaseObject, type ConstantCls, type DocumentModel, type FieldObject } from "@akanjs/constant";
 import type { HydratedDocument } from "mongoose";
+
+export type DatabaseCls<Schema = any> = Cls<Schema, { [FIELD_META]: FieldObject }>;
 
 export interface DefaultDocMtds<TDocument> {
   refresh(): Promise<this>;
@@ -20,7 +22,7 @@ export const by = <
 >(
   modelRef: ConstantCls<Model>,
   ...addRefs: AddDbModels
-): Cls<MergeAllActionTypes<AddDbModels, keyof _DocModel & string> & _DocModel> => {
+): DatabaseCls<MergeAllActionTypes<AddDbModels, keyof _DocModel & string> & _DocModel> => {
   Object.assign(modelRef[FIELD_META], ...addRefs.map((addRef) => addRef[FIELD_META]));
   return modelRef as any;
 };

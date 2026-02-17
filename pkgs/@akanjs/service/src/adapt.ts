@@ -20,10 +20,10 @@ export type AdaptorCls<Methods = {}, InjectMap extends { [key: string]: InjectIn
 
 export function adapt<Name extends string>(name: Name): AdaptorCls;
 
-export function adapt<
-  Name extends string,
-  Injection extends InjectBuilder<"use" | "env" | "generate" | "member" | "memory">,
->(name: Name, injectBuilder: Injection): AdaptorCls<{}, ReturnType<Injection>>;
+export function adapt<Name extends string, Injection extends InjectBuilder<"use" | "env" | "memory" | "plug">>(
+  name: Name,
+  injectBuilder: Injection
+): AdaptorCls<{}, ReturnType<Injection>>;
 
 export function adapt(name: string, injectBuilder?: InjectBuilder) {
   const injectInfoMap = injectBuilder?.(injectionBuilder) ?? {};

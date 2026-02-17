@@ -2,7 +2,7 @@ import type { Cls, MergeAllTypes, Prettify, PromiseOrObject } from "@akanjs/base
 import type {
   CRUDEventType,
   DataInputOf,
-  DatabaseDocumentModelInfo,
+  DatabaseModelAdaptor,
   ExtractQuery,
   ExtractSort,
   FilterInstance,
@@ -88,7 +88,7 @@ export type DatabaseService<
   } & QueryMethodPart<_Query, _Sort, Obj, Doc, Insight, _FindQueryOption, _ListQueryOption, _QueryOfDoc> & {
       [K in keyof _MixedLibSrv]: _MixedLibSrv[K] extends (...args: infer Args) => Promise<infer Value>
         ? Value extends (infer SingleValue)[]
-          ? SingleValue extends DatabaseDocumentModelInfo
+          ? SingleValue extends DatabaseModelAdaptor
             ? _DocObjectOfDoc extends GetDocObject<SingleValue>
               ? (...args: Args) => Promise<Doc[]>
               : _MixedLibSrv[K]

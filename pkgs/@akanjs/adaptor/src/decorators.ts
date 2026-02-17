@@ -4,10 +4,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import type { Connection } from "mongoose";
-import type { AdaptorCls, DatabaseService, ServiceCls } from "@akanjs/service";
+import type { AdaptorCls, ServiceCls } from "@akanjs/service";
 import type { UnCls } from "@akanjs/base";
-import type { Database, DatabaseModel, Mdl } from "../../document/src";
 
 export const Try = () => {
   return function (target: object, key: string, descriptor: PropertyDescriptor) {

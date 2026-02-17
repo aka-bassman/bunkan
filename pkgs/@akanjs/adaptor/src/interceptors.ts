@@ -1,6 +1,6 @@
 import { Logger } from "@akanjs/common";
 import { getGqlMeta, signalInfo } from "@akanjs/signal";
-import type { RedisClientType } from "redis";
+import type { Redis } from "ioredis";
 import { Observable, throwError, TimeoutError } from "rxjs";
 import { catchError, map, tap, timeout } from "rxjs/operators";
 import { intercept } from "./__intercept";
@@ -12,7 +12,7 @@ interface CacheResult<T> {
 }
 
 export class SignalCache extends intercept("signalCache", ({ use }) => ({
-  redis: use<RedisClientType>(),
+  redis: use<Redis>(),
 })) {
   #CACHE_PREFIX = "signal:";
 

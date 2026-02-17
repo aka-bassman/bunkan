@@ -14,7 +14,7 @@ import { DEFAULT_PAGE_SIZE, FIELD_META, type DocumentModel, type QueryOf } from 
 import type DataLoader from "dataloader";
 import type { Filter, Index, MeiliSearch } from "meilisearch";
 import type { HydratedDocument, Model as MongooseModel } from "mongoose";
-import type { RedisClientType, SetOptions } from "redis";
+import type { Redis } from "ioredis";
 
 import { createArrayLoader, createLoader, createQueryLoader } from "./dataLoader";
 import type { BaseMiddleware } from "./beyond";
@@ -41,13 +41,14 @@ class CacheDatabase<T = any> {
   private logger: Logger;
   constructor(
     private readonly refName: string,
-    private readonly redis: RedisClientType
+    private readonly redis: Redis
   ) {
     this.logger = new Logger(`${refName}Cache`);
   }
   async set(topic: string, key: string, value: string | number | Buffer, option: RedisSetOptions = {}) {
-    const setOption: SetOptions = { PXAT: option.expireAt?.toDate().getTime() };
-    await this.redis.set(`${this.refName}:${topic}:${key}`, value, setOption);
+    const expireTime = option.expireAt?.toDate().getTime();
+    if (expireTime) await this.redis.set(`${this.refName}:${topic}:${key}`, value, "PXAT", expireTime);
+    else await this.redis.set(`${this.refName}:${topic}:${key}`, value);
   }
   async get<T extends string | number | Buffer>(topic: string, key: string): Promise<T | undefined> {
     const value = await this.redis.get(`${this.refName}:${topic}:${key}`);
@@ -244,7 +245,7 @@ type DatabaseModelWithQuerySort<
   [K in `searchCount${_CapitalizedT}`]: (searchText: string) => Promise<number>;
 } & QueryMethodPart<Query, Sort, Obj, Doc, Insight, _FindQueryOption, _ListQueryOption, _QueryOfDoc>;
 
-export type DatabaseModel<
+export type DatabaseModelAdaptor<
   T extends string = string,
   Input = any,
   Doc = any,
@@ -274,7 +275,7 @@ export type DatabaseModel<
 >;
 
 export class DatabaseModelRegistry {
-  static #modelMap = new Map<string, Cls<DatabaseModel>>();
+  static #modelAdaptorMap = new Map<string, Cls<DatabaseModelAdaptor>>();
   static build<
     T extends string,
     Input,
@@ -287,9 +288,9 @@ export class DatabaseModelRegistry {
   >(
     database: Database<T, Input, Doc, Model, Middleware, Insight, Obj, Filter>,
     model: Mdl<any, any>,
-    redis: RedisClientType,
+    redis: Redis,
     meili: MeiliSearch
-  ): DatabaseModel<T, Input, Doc, Model, Insight, Filter> {
+  ): DatabaseModelAdaptor<T, Input, Doc, Model, Insight, Filter> {
     type Sort = ExtractSort<Filter>;
     const [modelName, className]: [string, string] = [database.refName, capitalize(database.refName)];
 
@@ -340,9 +341,9 @@ export class DatabaseModelRegistry {
     const cacheDatabase = new CacheDatabase(database.refName, redis);
     const searchDatabase = new SearchDatabase(database.refName, meili);
 
-    const DatabaseModel =
-      this.#modelMap.get(database.refName) ??
-      class DatabaseModel {
+    const DatabaseModelAdaptor =
+      this.#modelAdaptorMap.get(database.refName) ??
+      class DatabaseModelAdaptor {
         logger: Logger = new Logger(`${modelName}Model`);
         readonly __model: Mdl<any, any> = model;
         readonly __cache: CacheDatabase = cacheDatabase;
@@ -496,7 +497,7 @@ export class DatabaseModelRegistry {
         }
       };
 
-    Object.assign(DatabaseModel.prototype, {
+    Object.assign(DatabaseModelAdaptor.prototype, {
       [className]: model,
       [`${modelName}Loader`]: loader,
       [`${modelName}Cache`]: cacheDatabase,
@@ -524,43 +525,43 @@ export class DatabaseModelRegistry {
     Object.entries(filterMeta.query).forEach(([queryKey, filterInfo]) => {
       const queryFn = filterInfo.queryFn;
       if (!queryFn) throw new Error(`No query function for key: ${queryKey}`);
-      DatabaseModel.prototype[`list${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`list${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__list(query, queryOption);
       };
-      DatabaseModel.prototype[`listIds${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`listIds${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__listIds(query, queryOption);
       };
-      DatabaseModel.prototype[`find${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`find${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__find(query, queryOption);
       };
-      DatabaseModel.prototype[`findId${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`findId${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__findId(query, queryOption);
       };
-      DatabaseModel.prototype[`pick${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`pick${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__pick(query, queryOption);
       };
-      DatabaseModel.prototype[`pickId${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`pickId${capitalize(queryKey)}`] = async function (...args: any) {
         const { query, queryOption } = getQueryDataFromKey(queryKey, args);
         return this.__pickId(query, queryOption);
       };
-      DatabaseModel.prototype[`exists${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`exists${capitalize(queryKey)}`] = async function (...args: any) {
         const query = queryFn(...args);
         return this.__exists(query);
       };
-      DatabaseModel.prototype[`count${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`count${capitalize(queryKey)}`] = async function (...args: any) {
         const query = queryFn(...args);
         return this.__count(query);
       };
-      DatabaseModel.prototype[`insight${capitalize(queryKey)}`] = async function (...args: any) {
+      DatabaseModelAdaptor.prototype[`insight${capitalize(queryKey)}`] = async function (...args: any) {
         const query = queryFn(...args);
         return this.__insight(query);
       };
-      DatabaseModel.prototype[`query${capitalize(queryKey)}`] = function (...args: any) {
+      DatabaseModelAdaptor.prototype[`query${capitalize(queryKey)}`] = function (...args: any) {
         return queryFn(...args);
       };
     });
@@ -582,12 +583,12 @@ export class DatabaseModelRegistry {
                   loaderInfo.defaultQuery
                 )
               : null;
-      DatabaseModel.prototype[key] = loader;
+      DatabaseModelAdaptor.prototype[key] = loader;
     });
     Object.getOwnPropertyNames(database.Model.prototype).forEach((key) => {
-      DatabaseModel.prototype[key] = database.Model.prototype[key];
+      DatabaseModelAdaptor.prototype[key] = database.Model.prototype[key];
     });
-    this.#modelMap.set(database.refName, DatabaseModel as Cls<DatabaseModel>);
-    return new DatabaseModel() as DatabaseModel<T, Input, Doc, Model, Insight, Filter>;
+    this.#modelAdaptorMap.set(database.refName, DatabaseModelAdaptor as Cls<DatabaseModelAdaptor>);
+    return new DatabaseModelAdaptor() as DatabaseModelAdaptor<T, Input, Doc, Model, Insight, Filter>;
   }
 }

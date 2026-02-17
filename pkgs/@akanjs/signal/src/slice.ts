@@ -11,7 +11,7 @@ export type SliceCls<
 > = Cls<
   any,
   {
-    refName: SrvModule["refName"];
+    refName: SrvModule["srv"]["refName"];
     srv: SrvModule;
     [SLICE_META_KEY]: SliceInfoObj;
     getGuards: Guard[];
@@ -47,7 +47,7 @@ type ExtendSliceInfoObj<
     infer InternalArgs,
     infer ServerArgs
   >
-    ? SliceInfo<SrvModule["refName"], _Full, _Light, _Insight, Srvs, ArgNames, Args, InternalArgs, ServerArgs>
+    ? SliceInfo<SrvModule["srv"]["refName"], _Full, _Light, _Insight, Srvs, ArgNames, Args, InternalArgs, ServerArgs>
     : never;
 };
 
@@ -71,7 +71,7 @@ export function slice<
     LibSlices extends []
       ? {
           [""]: SliceInfo<
-            SrvModule["refName"],
+            SrvModule["srv"]["refName"],
             _Full,
             _Light,
             _Insight,
@@ -86,7 +86,7 @@ export function slice<
   >
 > {
   if (!srv.cnst) throw new Error("cnst is required");
-  const init = buildSlice(srv.refName, srv.cnst.full, srv.cnst.light, srv.cnst.insight);
+  const init = buildSlice(srv.srv.refName, srv.cnst.full, srv.cnst.light, srv.cnst.insight);
   const rootGuards = option.guards?.root
     ? Array.isArray(option.guards.root)
       ? option.guards.root
@@ -105,7 +105,7 @@ export function slice<
   const sigRef =
     libSlices.at(0) ??
     class Slice {
-      static refName = srv.refName;
+      static refName = srv.srv.refName;
       static srv = srv;
       static [SLICE_META_KEY] = {};
     };

@@ -1,65 +1,54 @@
-import type { BackendEnv, Cls } from "@akanjs/base";
-import type { ServerSignalCls } from "../../signal/src";
+import type { AdaptorCls, DefaultServiceMethods } from ".";
+import type { DefaultServerSignalMethods } from "@akanjs/signal";
 
 interface InjectBuilderOptions<ReturnType> {
+  injectionRefName?: string;
   generateFactory?: (options: any) => ReturnType;
+  adaptor?: AdaptorCls;
   additionalPropKeys?: string[];
+  local?: boolean;
 }
-export type InjectType = "database" | "service" | "use" | "env" | "generate" | "member" | "memory" | "signal";
+export type InjectType = keyof typeof injectionBuilder;
 
 export const INJECT_META_KEY = Symbol("inject");
 
-export class InjectInfo<ReturnType = any> {
-  type: InjectType;
-  generateFactory: (options: any) => ReturnType;
-  additionalPropKeys: string[];
+export class InjectInfo<ReturnType = any, Env extends { [key: string]: any } = never> {
+  readonly type: InjectType;
+  readonly injectionRefName?: string;
+  readonly generateFactory: (options: any) => ReturnType;
+  readonly additionalPropKeys: string[];
+  readonly local: boolean;
+  readonly adaptor?: AdaptorCls;
   constructor(type: InjectType, options: InjectBuilderOptions<ReturnType> = {}) {
     this.type = type;
+    this.injectionRefName = options.injectionRefName;
     this.generateFactory = options.generateFactory ?? (() => undefined as ReturnType);
     this.additionalPropKeys = options.additionalPropKeys ?? [];
+    this.local = options.local ?? false;
+    this.adaptor = options.adaptor;
   }
 }
 
 export const injectionBuilder = {
   database: <ReturnType>(additionalPropKeys: string[] = []) =>
     new InjectInfo<ReturnType>("database", { additionalPropKeys }),
-  service: <ReturnType>() => new InjectInfo<ReturnType>("service"),
+  service: <ReturnType extends DefaultServiceMethods>() => new InjectInfo<ReturnType>("service"),
   use: <ReturnType>() => new InjectInfo<ReturnType>("use"),
-  env: <ReturnType>(
-    key: string,
-    generateFactory: (envValue: string, options: BackendEnv) => ReturnType = (envValue: string) =>
-      envValue as ReturnType
-  ) =>
-    new InjectInfo<ReturnType>("env", {
-      generateFactory: (options: BackendEnv) => {
-        const envValue = process.env[key];
-        if (!envValue) throw new Error(`Environment variable ${key} not found`);
-        return generateFactory(envValue, options);
-      },
+  signal: <Signal>() => new InjectInfo<Signal>("signal"),
+  plug: <Adaptor, GenFactory extends (adaptor: Adaptor) => any = (adaptor: Adaptor) => Adaptor>(
+    adaptor: AdaptorCls<Adaptor>,
+    generateFactory?: GenFactory
+  ) => new InjectInfo<ReturnType<GenFactory>>("plug", { adaptor, generateFactory }),
+  env: <GenFactory extends (arg: any) => any>(generateFactory: GenFactory) =>
+    new InjectInfo<Awaited<ReturnType<GenFactory>>, GenFactory extends (arg: infer Env) => any ? Env : never>("env", {
+      generateFactory,
     }),
-  envOptional: <ReturnType>(
-    key: string,
-    generateFactory: (envValue: string | undefined, options: BackendEnv) => ReturnType = (
-      envValue: string | undefined
-    ) => envValue as ReturnType
-  ) =>
-    new InjectInfo<ReturnType | undefined>("env", {
-      generateFactory: (options: BackendEnv) => {
-        const envValue = process.env[key];
-        return generateFactory(envValue, options);
-      },
-    }),
-  generate: <ReturnType>(generateFactory: (options: BackendEnv) => ReturnType) =>
-    new InjectInfo<ReturnType>("generate", { generateFactory }),
-  member: <ReturnType>(initialValue: ReturnType = undefined as ReturnType) =>
-    new InjectInfo<ReturnType>("member", {
-      generateFactory: () => initialValue,
-    }),
-  memory: <ReturnType, DefaultValue = undefined>(defaultValue?: DefaultValue) =>
+  // TODO: Implement memory injection
+  memory: <ReturnType, DefaultValue = undefined>(defaultValue?: DefaultValue, { local }: { local?: boolean } = {}) =>
     new InjectInfo<ReturnType | DefaultValue>("memory", {
       generateFactory: () => defaultValue as ReturnType | DefaultValue,
+      local,
     }),
-  signal: <Signal>() => new InjectInfo<Signal>("signal"),
 };
 
 export type InjectBuilder<BuildType extends InjectType = InjectType> = (
