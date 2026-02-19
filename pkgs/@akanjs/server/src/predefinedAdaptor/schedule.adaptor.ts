@@ -1,5 +1,5 @@
 import { adapt } from "@akanjs/service";
-import type { CacheAdaptor } from "./cache.adaptor";
+import { RedisCache } from "./cache.adaptor";
 import type { InternalInfo } from "@akanjs/signal";
 
 export interface ScheduleAdaptor {
@@ -9,8 +9,8 @@ export interface ScheduleAdaptor {
 }
 
 export class Scheduler
-  extends adapt("scheduler", ({ use }) => ({
-    cache: use<CacheAdaptor>(),
+  extends adapt("scheduler", ({ plug }) => ({
+    cache: plug(RedisCache),
   }))
   implements ScheduleAdaptor
 {

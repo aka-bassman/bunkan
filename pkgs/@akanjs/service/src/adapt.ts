@@ -8,13 +8,14 @@ import {
 } from "./injectInfo";
 import { Logger } from "@akanjs/common";
 
-export type AdaptorCls<Methods = {}, InjectMap extends { [key: string]: InjectInfo } = {}> = Cls<
-  Methods &
-    ExtractInjectInfoObject<InjectMap> & {
-      readonly logger: Logger;
-      onInit(): Promise<void>;
-      onDestroy(): Promise<void>;
-    },
+export interface Adaptor {
+  readonly logger: Logger;
+  onInit(): Promise<void>;
+  onDestroy(): Promise<void>;
+}
+
+export type AdaptorCls<Methods = any, InjectMap extends Record<string, InjectInfo> = Record<string, InjectInfo>> = Cls<
+  Methods & ExtractInjectInfoObject<InjectMap> & Adaptor,
   { readonly [INJECT_META_KEY]: InjectMap; readonly refName: string }
 >;
 
@@ -26,7 +27,7 @@ export function adapt<Name extends string, Injection extends InjectBuilder<"use"
 ): AdaptorCls<{}, ReturnType<Injection>>;
 
 export function adapt(name: string, injectBuilder?: InjectBuilder) {
-  const injectInfoMap = injectBuilder?.(injectionBuilder) ?? {};
+  const injectInfoMap = injectBuilder?.(injectionBuilder(name)) ?? {};
   class Adaptor {
     readonly logger = new Logger(name);
     static readonly [INJECT_META_KEY] = injectInfoMap;

@@ -120,7 +120,7 @@ class FieldInfo<
   }
 }
 
-interface ConstantFieldBuildProps<FieldValue = any, MapValue = any, Metadata = { [key: string]: any }> {
+interface ConstantFieldBuildProps<FieldValue = any, MapValue = any, Metadata = any> {
   nullable: boolean;
   ref?: string;
   refPath?: string;

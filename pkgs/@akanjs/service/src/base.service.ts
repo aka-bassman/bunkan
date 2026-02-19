@@ -3,8 +3,9 @@ import type { Base } from "@akanjs/signal";
 import { serve } from "./serve";
 import { ServiceRegistry } from "./serviceRegistry";
 import { ServiceModule } from "./serviceModule";
+import { Int } from "@akanjs/base";
 
-export class BaseService extends serve("base" as const, ({ env, signal }) => ({
+export class BaseService extends serve("base" as const, ({ env, signal, memory }) => ({
   onCleanup: env(({ onCleanup }: { onCleanup?: () => Promise<void> }) => onCleanup),
   baseSignal: signal<Base>(),
 })) {

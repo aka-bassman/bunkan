@@ -42,6 +42,8 @@ export type ServiceCls<
     readonly type: ServiceType;
     readonly [INJECT_META_KEY]: InjectMap;
     readonly enabled: boolean;
+    onInit: () => Promise<void>;
+    onDestroy: () => Promise<void>;
   }
 >;
 
@@ -125,11 +127,12 @@ export function serve(
     option.enabled ??
     (!option.serverMode || process.env.SERVER_MODE === option.serverMode || process.env.SERVER_MODE === "all");
   const serviceType = typeof refNameOrDb === "string" ? "plain" : "database";
-  const injectInfoMap = injectBuilder(injectionBuilder);
+  const injectInfoMap = injectBuilder(injectionBuilder(refName));
   if (serviceType === "database")
     Object.assign(injectInfoMap, {
       [`${refName}Model`]: new InjectInfo("database", {
         additionalPropKeys: ["__databaseModel"],
+        parentRefName: refName,
       }),
     });
   const srvRef =
@@ -143,6 +146,12 @@ export function serve(
       }
       static readonly [INJECT_META_KEY] = injectInfoMap;
       readonly logger = new Logger(this.constructor.name);
+      async onInit() {
+        //
+      }
+      async onDestroy() {
+        //
+      }
     };
 
   return srvRef;

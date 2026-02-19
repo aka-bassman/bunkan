@@ -1,6 +1,6 @@
 import { type GetStateObject, type Cls, PrimitiveScalar, PrimitiveRegistry } from "@akanjs/base";
 
-import type { ConstantCls, PurifiedModel } from ".";
+import { serialize, type ConstantCls, type PurifiedModel, deserialize } from ".";
 import type { DefaultOf, DocumentModel, QueryOf } from "./types";
 
 export type ModelType = "input" | "object" | "full" | "light" | "insight" | "filter" | "scalar";
@@ -160,6 +160,40 @@ export class ConstantRegistry {
       DocumentModel<Model>,
       PurifiedModel<Model>
     >;
+  }
+  static serialize<Value>(modelRef: Cls | Cls[], value: Value, nullable: boolean = false): Value {
+    if (Array.isArray(value) && Array.isArray(modelRef)) {
+      const singleModelRef = modelRef.at(0);
+      if (!singleModelRef) throw new Error("No model ref found");
+      return value.map((v: object) => this.serialize(singleModelRef as Cls, v)) as unknown as Value;
+    } else if (modelRef === Map && value instanceof Map) {
+      return Object.fromEntries(
+        [...value.entries()].map(([key, value]: [string, any]) => {
+          return [key, this.serialize(value, value)];
+        })
+      ) as unknown as Value;
+    } else if (PrimitiveRegistry.has(modelRef as Cls)) {
+      return (modelRef as typeof PrimitiveScalar)._serialize(value) as unknown as Value;
+    } else if (this.modelRefNameMap.has(modelRef as Cls)) {
+      return serialize(modelRef as ConstantCls, 0, value, { nullable }) as unknown as Value;
+    } else throw new Error(`No serialize function for modelRef: ${modelRef}`);
+  }
+  static deserialize<Value>(modelRef: Cls | Cls[], value: Value, nullable: boolean = false): Value {
+    if (Array.isArray(value) && Array.isArray(modelRef)) {
+      const singleModelRef = modelRef.at(0);
+      if (!singleModelRef) throw new Error("No model ref found");
+      return value.map((v: object) => this.deserialize(singleModelRef as Cls, v)) as unknown as Value;
+    } else if (modelRef === Map && value instanceof Map) {
+      return new Map(
+        Object.entries(value).map(([key, value]: [string, any]) => {
+          return [key, this.deserialize(value, value)];
+        })
+      ) as unknown as Value;
+    } else if (PrimitiveRegistry.has(modelRef as Cls)) {
+      return (modelRef as typeof PrimitiveScalar)._parse(value) as unknown as Value;
+    } else if (this.modelRefNameMap.has(modelRef as Cls)) {
+      return deserialize(modelRef as ConstantCls, 0, value, { nullable }) as unknown as Value;
+    } else throw new Error(`No deserialize function for modelRef: ${modelRef}`);
   }
 }
 

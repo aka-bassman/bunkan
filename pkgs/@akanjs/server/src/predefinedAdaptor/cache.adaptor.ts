@@ -8,6 +8,15 @@ export interface CacheAdaptor {
   get<T extends string | number | Buffer>(topic: string, key: string): Promise<T | undefined>;
   delete(topic: string, key: string): Promise<void>;
   getClient(): Redis;
+  hset(
+    topic: string,
+    key: string,
+    subKey: string,
+    value: string | number | Buffer,
+    option?: { expireAt?: Dayjs }
+  ): Promise<void>;
+  hget<T extends string | number | Buffer>(topic: string, key: string, subKey: string): Promise<T | undefined>;
+  hdelete(topic: string, key: string, subKey: string): Promise<void>;
 }
 
 interface RedisEnv extends BaseEnv {
@@ -16,6 +25,7 @@ interface RedisEnv extends BaseEnv {
 
 export class RedisCache
   extends adapt("redisCache", ({ env, use }) => ({
+    dummyValue: use<string>(),
     redis: env(
       async ({
         appName,
@@ -82,6 +92,24 @@ export class RedisCache
   }
   async delete(topic: string, key: string) {
     await this.redis.del(`${topic}:${key}`);
+  }
+  async hset(
+    topic: string,
+    key: string,
+    subKey: string,
+    value: string | number | Buffer,
+    option?: { expireAt?: Dayjs }
+  ): Promise<void> {
+    const expireTime = option?.expireAt?.toDate().getTime();
+    if (expireTime) await this.redis.hset(`${topic}:${key}`, subKey, value, "PXAT", expireTime);
+    else await this.redis.hset(`${topic}:${key}`, subKey, value);
+  }
+  async hget<T extends string | number | Buffer>(topic: string, key: string, subKey: string): Promise<T | undefined> {
+    const value = await this.redis.hget(`${topic}:${key}`, subKey);
+    return value as T | undefined;
+  }
+  async hdelete(topic: string, key: string, subKey: string): Promise<void> {
+    await this.redis.hdel(`${topic}:${key}`, subKey);
   }
   getClient(): Redis {
     return this.redis;

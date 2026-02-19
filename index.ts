@@ -4,7 +4,7 @@ import { ConstantRegistry, via } from "@akanjs/constant";
 import { DatabaseRegistry, FILTER_META_KEY, beyond, by, from, into, type SchemaOf } from "@akanjs/document";
 import { INJECT_META_KEY, ServiceModule, adapt, serve } from "@akanjs/service";
 import { internal, slice, endpoint, SLICE_META_KEY, serverSignal, SignalRegistry } from "@akanjs/signal";
-import { AkanApp, akan } from "@akanjs/server";
+import { AkanApp } from "@akanjs/server";
 
 Logger.info("Hello, world!");
 
@@ -91,12 +91,20 @@ export class AdminModel extends into(Admin, AdminFilter, admin, ({ byField }) =>
 }
 export class AdminMiddleware extends beyond(AdminModel, Admin) {}
 
-export class Authorizer extends adapt("authorizer", ({ use }) => ({
+export class Authorizer extends adapt("authorizer", ({ use, memory }) => ({
   hello: use<string>(),
+  // memoryValue: memory(Int, {
+  //   local: false,
+  //   get: (value) => value > 0,
+  //   set: (value: boolean) => (value ? 123 : -123) as number,
+  // }),
 })) {
+  // override async onInit(): Promise<void> {
+  //   console.log(await this.memoryValue.get());
+  // }
   test() {
-    console.log(this.hello);
     this.logger.info("test");
+    // console.log(this.memoryValue.get());
   }
 }
 export const dbAdmin = DatabaseRegistry.buildModel(
@@ -110,8 +118,8 @@ export const dbAdmin = DatabaseRegistry.buildModel(
   AdminFilter
 );
 
-export class AdminService extends serve(dbAdmin, ({ use, service, signal }) => ({
-  authorizer: use<Authorizer>(),
+export class AdminService extends serve(dbAdmin, ({ plug, service, signal }) => ({
+  authorizer: plug(Authorizer),
   adminSignal: signal<AdminServeSignal>(),
 })) {
   test() {
@@ -144,5 +152,9 @@ export class AdminServeSignal extends serverSignal(AdminEndpoint, AdminInternal)
 SignalRegistry.registerDatabase(AdminInternal, AdminEndpoint, AdminSlice);
 console.log(AdminServeSignal);
 
-const app = new AkanApp();
+const app = new AkanApp({
+  uses: {
+    dummyValue: "dummyValue123",
+  },
+});
 app.start();

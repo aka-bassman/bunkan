@@ -22,13 +22,13 @@ export type InterceptorCls<Methods = {}, InjectMap extends { [key: string]: Inje
 
 export function intercept<Name extends string>(name: Name): InterceptorCls;
 
-export function intercept<
-  Name extends string,
-  Injection extends InjectBuilder<"use" | "env" | "generate" | "member" | "memory">,
->(refName: Name, injectBuilder: Injection): InterceptorCls<{}, ReturnType<Injection>>;
+export function intercept<Name extends string, Injection extends InjectBuilder<"use" | "env" | "memory">>(
+  refName: Name,
+  injectBuilder: Injection
+): InterceptorCls<{}, ReturnType<Injection>>;
 
 export function intercept(refName: string, injectBuilder?: InjectBuilder) {
-  const injectInfoMap = injectBuilder?.(injectionBuilder) ?? {};
+  const injectInfoMap = injectBuilder?.(injectionBuilder(refName)) ?? {};
   return class Interceptor {
     static readonly refName = refName;
     static readonly [INJECT_META_KEY] = injectInfoMap;
