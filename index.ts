@@ -2,7 +2,7 @@ import { baseEnv, Int, Float, PrimitiveScalar, enumOf, dayjs, ID } from "@akanjs
 import { Logger } from "@akanjs/common";
 import { ConstantRegistry, via } from "@akanjs/constant";
 import { DatabaseRegistry, FILTER_META_KEY, beyond, by, from, into, type SchemaOf } from "@akanjs/document";
-import { INJECT_META_KEY, ServiceModule, adapt, serve } from "@akanjs/service";
+import { BaseService, INJECT_META_KEY, ServiceModule, adapt, serve } from "@akanjs/service";
 import { internal, slice, endpoint, SLICE_META_KEY, serverSignal, SignalRegistry } from "@akanjs/signal";
 import { AkanApp } from "@akanjs/server";
 
@@ -121,10 +121,11 @@ export const dbAdminModel = DatabaseRegistry.setDatabase("admin", dbAdmin);
 
 export class AdminService extends serve(dbAdmin, ({ plug, service, signal }) => ({
   authorizer: plug(Authorizer),
-  adminSignal: signal<AdminServeSignal>(),
+  adminSignal: signal<AdminServerSignal>(),
+  baseService: service<BaseService>(),
 })) {
   override async onInit(): Promise<void> {
-    // console.log(Object.keys(this.adminModel.Admin.db.collections));
+    console.log(await this.listAny());
     return Promise.resolve();
   }
   test() {
@@ -152,10 +153,9 @@ export class AdminSlice extends slice(srv.admin, {}, () => ({})) {}
 
 export class AdminEndpoint extends endpoint(srv.admin, ({ query, mutation, pubsub, message }) => ({})) {}
 
-export class AdminServeSignal extends serverSignal(AdminEndpoint, AdminInternal) {}
+export class AdminServerSignal extends serverSignal(AdminEndpoint, AdminInternal) {}
 
-SignalRegistry.registerDatabase(AdminInternal, AdminEndpoint, AdminSlice);
-console.log(AdminServeSignal);
+SignalRegistry.registerDatabase(AdminInternal, AdminEndpoint, AdminSlice, AdminServerSignal);
 
 const app = new AkanApp({
   databases: [

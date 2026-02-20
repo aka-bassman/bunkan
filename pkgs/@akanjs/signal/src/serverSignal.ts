@@ -14,8 +14,8 @@ export interface ServerSignal {
 }
 
 export type ServerSignalCls<
-  EnpCls extends EndpointCls,
-  IntCls extends InternalCls,
+  EnpCls extends EndpointCls = EndpointCls,
+  IntCls extends InternalCls = InternalCls,
   _EndpointInfoObj extends { [key: string]: EndpointInfo } = {
     [K in keyof EnpCls[typeof ENDPOINT_META_KEY] as EnpCls[typeof ENDPOINT_META_KEY][K]["type"] extends "pubsub"
       ? K

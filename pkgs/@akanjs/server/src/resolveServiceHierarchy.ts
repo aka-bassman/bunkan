@@ -26,11 +26,12 @@ export function resolveServiceHierarchy(serviceMap: Map<string, ServiceCls>): Se
 
     for (const [propKey, injectInfo] of Object.entries(injectMap)) {
       if (injectInfo.type === "service") {
-        if (serviceMap.has(propKey) && propKey !== key) {
-          dependencies.push(propKey);
+        const depKey = propKey.replace(/Service$/, "");
+        if (serviceMap.has(depKey) && depKey !== key) {
+          dependencies.push(depKey);
         }
       } else if (injectInfo.type === "database") {
-        const depKey = injectInfo.injectionRefName ?? propKey.replace(/Model$/, "");
+        const depKey = propKey.replace(/Model$/, "");
         if (serviceMap.has(depKey) && depKey !== key) {
           dependencies.push(depKey);
         }
@@ -39,7 +40,7 @@ export function resolveServiceHierarchy(serviceMap: Map<string, ServiceCls>): Se
 
     graph.set(key, { key, service, dependencies });
   }
-
+  console.log(graph);
   const stages = topologicalStages(graph);
 
   return { graph, classToKey, stages };

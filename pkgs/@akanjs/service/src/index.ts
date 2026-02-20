@@ -6,3 +6,4 @@ export * from "./adapt";
 export * from "./serve";
 export * from "./types";
 export * from "./injectInfo";
+export * from "./predefinedAdaptor";

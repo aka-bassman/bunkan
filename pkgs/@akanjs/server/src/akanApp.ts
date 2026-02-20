@@ -15,6 +15,7 @@ import {
   INJECT_META_KEY,
   InjectInfo,
   type Service,
+  type InjectRegistry,
 } from "@akanjs/service";
 import type { DatabaseCls, DatabaseModel } from "@akanjs/document";
 import type { ConstantModel, ScalarConstantModel } from "@akanjs/constant";
@@ -35,7 +36,7 @@ import {
   Scheduler,
   ConsoleLogger,
   MeiliDatabase,
-} from "./predefinedAdaptor";
+} from "@akanjs/service";
 import { baseEnv, type BaseEnv, type Cls } from "@akanjs/base";
 import { collectAdaptors, resolveAdaptorHierarchy } from "./resolveAdaptorHierarchy";
 import { resolveServiceHierarchy } from "./resolveServiceHierarchy";
@@ -90,7 +91,7 @@ export class AkanApp {
     schedule: Scheduler,
     logging: ConsoleLogger,
   };
-  readonly #registry = {
+  readonly #registry: InjectRegistry = {
     uses: new Map<string, any>(),
     adaptorCls: new Map<string, AdaptorCls>(),
     adaptor: new Map<AdaptorCls, Adaptor>(),
@@ -98,6 +99,7 @@ export class AkanApp {
     databaseAdapor: new Map<AdaptorCls, DatabaseModel>(),
     signalAdaptorCls: new Map<string, AdaptorCls>(),
     signalAdapor: new Map<AdaptorCls, ServerSignal>(),
+    serviceCls: new Map<string, ServiceCls>(),
     service: new Map<ServiceCls, Service>(),
   };
   readonly #live = {
@@ -168,18 +170,18 @@ export class AkanApp {
     const { stages: adaptorStages, classToKey } = resolveAdaptorHierarchy(adaptorMap);
     for (const stage of adaptorStages) {
       await Promise.all(
-        stage.map(async (key) => {
-          const adaptorCls = adaptorMap.get(key);
-          if (!adaptorCls) throw new Error(`Adaptor "${key}" is not registered`);
+        stage.map(async (refName) => {
+          const adaptorCls = adaptorMap.get(refName);
+          if (!adaptorCls) throw new Error(`Adaptor "${refName}" is not registered`);
           const adaptor = new adaptorCls();
           await InjectInfo.resolveInjection(adaptor, adaptorCls, this.#registry, this.props.env ?? baseEnv);
           const start = Date.now();
-          adaptor.logger.verbose(`${key} adaptor initializing...`);
+          adaptor.logger.verbose(`${refName} adaptor initializing...`);
           await adaptor.onInit();
-          this.#live.adaptor.set(key, adaptor);
-          this.#registry.adaptorCls.set(key, adaptorCls);
+          this.#live.adaptor.set(refName, adaptor);
+          this.#registry.adaptorCls.set(refName, adaptorCls);
           this.#registry.adaptor.set(adaptorCls, adaptor);
-          adaptor.logger.verbose(`${key} adaptor initialized in ${Date.now() - start}ms`);
+          adaptor.logger.verbose(`${refName} adaptor initialized in ${Date.now() - start}ms`);
         })
       );
     }
@@ -200,9 +202,9 @@ export class AkanApp {
     const { stages: serviceStages, classToKey } = resolveServiceHierarchy(serviceMap);
     for (const stage of serviceStages) {
       await Promise.all(
-        stage.map(async (key) => {
-          const serviceCls = serviceMap.get(key);
-          if (!serviceCls) throw new Error(`Service "${key}" is not registered`);
+        stage.map(async (refName) => {
+          const serviceCls = serviceMap.get(refName);
+          if (!serviceCls) throw new Error(`Service "${refName}" is not registered`);
           if (serviceCls.type === "database") {
             const databaseModule = this.#database.get(serviceCls.refName);
             if (!databaseModule) throw new Error(`Database "${serviceCls.refName}" is not registered`);
@@ -211,9 +213,10 @@ export class AkanApp {
           const service = new serviceCls();
           await InjectInfo.resolveInjection(service, serviceCls, this.#registry, this.props.env ?? baseEnv);
           await service.onInit();
-          this.#live.service.set(key, service);
+          this.#live.service.set(refName, service);
+          this.#registry.serviceCls.set(refName, serviceCls);
           this.#registry.service.set(serviceCls, service);
-          service.logger.verbose(`${key} service initialized`);
+          service.logger.verbose(`${refName} service initialized`);
         })
       );
     }

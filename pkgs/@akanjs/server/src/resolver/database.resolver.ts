@@ -33,8 +33,7 @@ import {
   SearchDatabase,
   type DatabaseModel,
 } from "@akanjs/document";
-import { adapt, type AdaptorCls } from "@akanjs/service";
-import { MeiliDatabase, RedisCache } from "..";
+import { MeiliDatabase, RedisCache, adapt, type AdaptorCls } from "@akanjs/service";
 import { MongoResolver } from "./mongo.resolver";
 
 export class DatabaseResolver {

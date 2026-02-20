@@ -7,13 +7,12 @@ import {
   type PlainTypeToFieldType,
 } from "@akanjs/constant";
 import type { BaseEnv, Cls, PrimitiveScalar } from "@akanjs/base";
-import type { CacheAdaptor } from "@akanjs/server";
+import type { CacheAdaptor } from "./predefinedAdaptor";
 import type { DatabaseModel } from "@akanjs/document";
 
 export type InjectType = keyof ReturnType<typeof injectionBuilder>;
 
 interface InjectBuilderOptions<ReturnType> {
-  injectionRefName?: string;
   generateFactory?: (options: any) => ReturnType;
   adaptor?: AdaptorCls;
   additionalPropKeys?: string[];
@@ -35,6 +34,7 @@ export interface InjectRegistry {
   databaseAdapor: Map<AdaptorCls, DatabaseModel>;
   signalAdaptorCls: Map<string, AdaptorCls>;
   signalAdapor: Map<AdaptorCls, ServerSignal>;
+  serviceCls: Map<string, ServiceCls>;
   service: Map<ServiceCls, Service>;
 }
 
@@ -45,7 +45,6 @@ export class InjectInfo<
   FieldValue = never,
 > {
   readonly type: Type;
-  readonly injectionRefName?: string;
   readonly generateFactory: (options: any) => ReturnType;
   readonly get?: (value: any) => any;
   readonly set?: (value: any) => any;
@@ -57,7 +56,6 @@ export class InjectInfo<
   readonly parentRefName: string;
   constructor(type: Type, options: InjectBuilderOptions<ReturnType>) {
     this.type = type;
-    this.injectionRefName = options.injectionRefName;
     this.generateFactory = options.generateFactory ?? (() => undefined as ReturnType);
     this.additionalPropKeys = options.additionalPropKeys ?? [];
     this.local = options.local ?? false;
@@ -130,8 +128,16 @@ export class InjectInfo<
     injectInfo: InjectInfo<"service">,
     registry: InjectRegistry
   ) {
-    //
-    // Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
+    if (!propKey.endsWith("Service"))
+      throw new Error(
+        `Service inject key must end with "***Service", current key is "${propKey} on ${injectInfo.parentRefName}"`
+      );
+    const injectServiceRefName = propKey.slice(0, -7);
+    const injectServiceCls = registry.serviceCls.get(injectServiceRefName);
+    if (!injectServiceCls) throw new Error(`Service "${injectServiceRefName}" is not registered`);
+    const injectService = registry.service.get(injectServiceCls);
+    if (!injectService) throw new Error(`Service "${injectServiceRefName}" is not initialized`);
+    Object.defineProperty(instance, propKey, { value: injectService, writable: false, enumerable: true });
   }
   static async #injectUse(instance: Adaptor | Service, propKey: string, uses: Map<string, any>) {
     const useValue = uses.get(propKey);
