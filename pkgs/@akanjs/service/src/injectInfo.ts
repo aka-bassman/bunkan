@@ -1,13 +1,14 @@
-import type { Adaptor, AdaptorCls, DefaultServiceMethods } from ".";
-import type { DefaultServerSignalMethods } from "@akanjs/signal";
+import type { Adaptor, AdaptorCls, Service, ServiceCls } from ".";
+import type { ServerSignal } from "@akanjs/signal";
 import {
   ConstantRegistry,
   type ConstantFieldTypeInput,
   type FieldToValue,
   type PlainTypeToFieldType,
 } from "@akanjs/constant";
-import type { Cls, PrimitiveScalar } from "@akanjs/base";
+import type { BaseEnv, Cls, PrimitiveScalar } from "@akanjs/base";
 import type { CacheAdaptor } from "@akanjs/server";
+import type { DatabaseModel } from "@akanjs/document";
 
 export type InjectType = keyof ReturnType<typeof injectionBuilder>;
 
@@ -25,6 +26,17 @@ interface InjectBuilderOptions<ReturnType> {
 }
 
 export const INJECT_META_KEY = Symbol("inject");
+
+export interface InjectRegistry {
+  uses: Map<string, any>;
+  adaptorCls: Map<string, AdaptorCls>;
+  adaptor: Map<AdaptorCls, Adaptor>;
+  databaseAdaptorCls: Map<string, AdaptorCls>;
+  databaseAdapor: Map<AdaptorCls, DatabaseModel>;
+  signalAdaptorCls: Map<string, AdaptorCls>;
+  signalAdapor: Map<AdaptorCls, ServerSignal>;
+  service: Map<ServiceCls, Service>;
+}
 
 export class InjectInfo<
   Type extends InjectType = any,
@@ -57,50 +69,38 @@ export class InjectInfo<
     this.parentRefName = options.parentRefName;
   }
   static async resolveInjection(
-    instance: Adaptor,
-    adaptorCls: AdaptorCls,
-    {
-      databaseRegistry,
-      serviceRegistry,
-      useRegistry,
-      signalRegistry,
-      adaptorRegistry,
-      env,
-      getCacheAdaptor,
-    }: {
-      databaseRegistry: Map<string, any>;
-      serviceRegistry: Map<string, any>;
-      useRegistry: Map<string, any>;
-      signalRegistry: Map<string, any>;
-      adaptorRegistry: Map<AdaptorCls, Adaptor>;
-      env: any;
-      getCacheAdaptor: () => CacheAdaptor;
-    }
+    instance: Adaptor | Service,
+    applyCls: AdaptorCls | ServiceCls,
+    registry: InjectRegistry,
+    env: BaseEnv
   ) {
-    const injectMap = adaptorCls[INJECT_META_KEY];
+    const injectMap = applyCls[INJECT_META_KEY];
     await Promise.all(
       Object.entries(injectMap).map(async ([propKey, injectInfo]) => {
         switch (injectInfo.type) {
           case "database":
-            await this.#injectDatabase(instance, propKey, injectInfo, databaseRegistry);
+            await this.#injectDatabase(instance, propKey, injectInfo, registry.adaptorCls, registry.adaptor);
             break;
           case "service":
-            await this.#injectService(instance, propKey, injectInfo, serviceRegistry);
+            await this.#injectService(instance, propKey, injectInfo, registry);
             break;
           case "use":
-            await this.#injectUse(instance, propKey, injectInfo, useRegistry);
+            await this.#injectUse(instance, propKey, registry.uses);
             break;
           case "signal":
-            await this.#injectSignal(instance, propKey, injectInfo, signalRegistry);
+            await this.#injectSignal(instance, propKey, injectInfo, registry);
             break;
           case "plug":
-            await this.#injectPlug(instance, propKey, injectInfo, adaptorRegistry);
+            await this.#injectPlug(instance, propKey, injectInfo, registry.adaptor);
             break;
           case "env":
             await this.#injectEnv(instance, propKey, injectInfo, env);
             break;
           case "memory": {
-            const cacheAdaptor = getCacheAdaptor();
+            const cacheAdaptorCls = registry.adaptorCls.get("redisCache");
+            if (!cacheAdaptorCls) throw new Error("RedisCache adaptor is not registered");
+            const cacheAdaptor = registry.adaptor.get(cacheAdaptorCls) as unknown as CacheAdaptor;
+            if (!cacheAdaptor) throw new Error("RedisCache adaptor is not initialized");
             await this.#injectMemory(instance, propKey, injectInfo, cacheAdaptor);
             break;
           }
@@ -111,29 +111,30 @@ export class InjectInfo<
     );
   }
   static async #injectDatabase(
-    instance: Adaptor,
+    instance: Adaptor | Service,
     propKey: string,
     injectInfo: InjectInfo<"database">,
-    databaseRegistry: Map<string, any>
+    adaptorClsRegistry: Map<string, AdaptorCls>,
+    adaptorRegistry: Map<AdaptorCls, Adaptor>
   ) {
-    // Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
+    const databaseAdaptorRefName = `${injectInfo.parentRefName}Model`;
+    const databaseAdaptorCls = adaptorClsRegistry.get(databaseAdaptorRefName);
+    if (!databaseAdaptorCls) throw new Error(`Database adaptor "${databaseAdaptorRefName}" is not registered`);
+    const databaseAdaptor = adaptorRegistry.get(databaseAdaptorCls);
+    if (!databaseAdaptor) throw new Error(`Database adaptor "${databaseAdaptorRefName}" is not initialized`);
+    Object.defineProperty(instance, propKey, { value: databaseAdaptor, writable: false, enumerable: true });
   }
   static async #injectService(
-    instance: Adaptor,
+    instance: Adaptor | Service,
     propKey: string,
     injectInfo: InjectInfo<"service">,
-    serviceRegistry: Map<string, any>
+    registry: InjectRegistry
   ) {
     //
     // Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
   }
-  static async #injectUse(
-    instance: Adaptor,
-    propKey: string,
-    injectInfo: InjectInfo<"use">,
-    useRegistry: Map<string, any>
-  ) {
-    const useValue = useRegistry.get(propKey);
+  static async #injectUse(instance: Adaptor | Service, propKey: string, uses: Map<string, any>) {
+    const useValue = uses.get(propKey);
     if (!useValue)
       throw new Error(
         `Cannot inject "${propKey}" into adaptor "${(instance.constructor as AdaptorCls).refName}": ` +
@@ -142,16 +143,16 @@ export class InjectInfo<
     Object.defineProperty(instance, propKey, { value: useValue, writable: false, enumerable: true });
   }
   static async #injectSignal(
-    instance: Adaptor,
+    instance: Adaptor | Service,
     propKey: string,
     injectInfo: InjectInfo<"signal">,
-    signalRegistry: Map<string, any>
+    registry: InjectRegistry
   ) {
     //
     // Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
   }
   static async #injectPlug(
-    instance: Adaptor,
+    instance: Adaptor | Service,
     propKey: string,
     injectInfo: InjectInfo<"plug">,
     adaptorRegistry: Map<AdaptorCls, Adaptor>
@@ -167,12 +168,12 @@ export class InjectInfo<
     const value = await injectInfo.generateFactory(depInstance);
     Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
   }
-  static async #injectEnv(instance: Adaptor, propKey: string, injectInfo: InjectInfo<"env">, env: any) {
+  static async #injectEnv(instance: Adaptor | Service, propKey: string, injectInfo: InjectInfo<"env">, env: any) {
     const value = await injectInfo.generateFactory(env);
     Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
   }
   static async #injectMemory(
-    instance: Adaptor,
+    instance: Adaptor | Service,
     propKey: string,
     injectInfo: InjectInfo<"memory">,
     cacheAdaptor: CacheAdaptor
@@ -231,8 +232,7 @@ type GetFieldValue<ValueRef, ExplicitType, MapValue = never> = unknown extends E
 export const injectionBuilder = (parentRefName: string) => ({
   database: <ReturnType>(additionalPropKeys: string[] = []) =>
     new InjectInfo<"database", ReturnType>("database", { additionalPropKeys, parentRefName }),
-  service: <ReturnType extends DefaultServiceMethods>() =>
-    new InjectInfo<"service", ReturnType>("service", { parentRefName }),
+  service: <ReturnType extends Service>() => new InjectInfo<"service", ReturnType>("service", { parentRefName }),
   use: <ReturnType>() => new InjectInfo<"use", ReturnType>("use", { parentRefName }),
   signal: <Signal>() => new InjectInfo<"signal", Signal>("signal", { parentRefName }),
   plug: <Adaptor, GenFactory extends (adaptor: Adaptor) => any = (adaptor: Adaptor) => Adaptor>(

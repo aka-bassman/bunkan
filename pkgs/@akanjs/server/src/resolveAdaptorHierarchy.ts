@@ -1,9 +1,8 @@
 import { type AdaptorCls, INJECT_META_KEY, InjectInfo } from "@akanjs/service";
+import { type DependencyNode, topologicalStages } from "./resolveHierarchy";
 
-interface AdaptorNode {
-  key: string;
+interface AdaptorNode extends DependencyNode {
   adaptor: AdaptorCls;
-  dependencies: string[];
 }
 
 export interface AdaptorHierarchy {
@@ -72,84 +71,4 @@ export function resolveAdaptorHierarchy(adaptorMap: Map<string, AdaptorCls>): Ad
   const stages = topologicalStages(graph);
 
   return { graph, classToKey, stages };
-}
-
-function topologicalStages(graph: Map<string, AdaptorNode>): string[][] {
-  const inDegree = new Map<string, number>();
-  const dependents = new Map<string, string[]>();
-
-  for (const [refName, node] of graph) {
-    inDegree.set(refName, node.dependencies.length);
-    dependents.set(refName, []);
-  }
-
-  for (const [refName, node] of graph) {
-    for (const dep of node.dependencies) {
-      dependents.get(dep)!.push(refName);
-    }
-  }
-
-  let queue: string[] = [];
-  for (const [refName, degree] of inDegree) {
-    if (degree === 0) queue.push(refName);
-  }
-
-  const stages: string[][] = [];
-  let processed = 0;
-
-  while (queue.length > 0) {
-    stages.push(queue);
-    processed += queue.length;
-
-    const next: string[] = [];
-    for (const refName of queue) {
-      for (const dependent of dependents.get(refName)!) {
-        const newDegree = inDegree.get(dependent)! - 1;
-        inDegree.set(dependent, newDegree);
-        if (newDegree === 0) next.push(dependent);
-      }
-    }
-    queue = next;
-  }
-
-  if (processed !== graph.size) {
-    const remaining = [...graph.keys()].filter((r) => inDegree.get(r)! > 0);
-    const cycle = traceCycle(graph, remaining);
-    throw new Error(`Circular adaptor dependency detected: ${cycle.join(" → ")}`);
-  }
-
-  return stages;
-}
-
-function traceCycle(graph: Map<string, AdaptorNode>, candidates: string[]): string[] {
-  const visited = new Set<string>();
-  const path: string[] = [];
-
-  function dfs(refName: string): string[] | null {
-    if (path.includes(refName)) {
-      const cycleStart = path.indexOf(refName);
-      return [...path.slice(cycleStart), refName];
-    }
-    if (visited.has(refName)) return null;
-    visited.add(refName);
-    path.push(refName);
-
-    const node = graph.get(refName);
-    if (node) {
-      for (const dep of node.dependencies) {
-        const cycle = dfs(dep);
-        if (cycle) return cycle;
-      }
-    }
-
-    path.pop();
-    return null;
-  }
-
-  for (const refName of candidates) {
-    const cycle = dfs(refName);
-    if (cycle) return cycle;
-  }
-
-  return candidates;
 }

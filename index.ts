@@ -92,7 +92,7 @@ export class AdminModel extends into(Admin, AdminFilter, admin, ({ byField }) =>
 export class AdminMiddleware extends beyond(AdminModel, Admin) {}
 
 export class Authorizer extends adapt("authorizer", ({ use, memory }) => ({
-  hello: use<string>(),
+  // hello: use<string>(),
   // memoryValue: memory(Int, {
   //   local: false,
   //   get: (value) => value > 0,
@@ -117,11 +117,16 @@ export const dbAdmin = DatabaseRegistry.buildModel(
   AdminInsight,
   AdminFilter
 );
+export const dbAdminModel = DatabaseRegistry.setDatabase("admin", dbAdmin);
 
 export class AdminService extends serve(dbAdmin, ({ plug, service, signal }) => ({
   authorizer: plug(Authorizer),
   adminSignal: signal<AdminServeSignal>(),
 })) {
+  override async onInit(): Promise<void> {
+    // console.log(Object.keys(this.adminModel.Admin.db.collections));
+    return Promise.resolve();
+  }
   test() {
     this.authorizer.test();
     this.adminSignal.archiveAdmin("1");
@@ -153,6 +158,16 @@ SignalRegistry.registerDatabase(AdminInternal, AdminEndpoint, AdminSlice);
 console.log(AdminServeSignal);
 
 const app = new AkanApp({
+  databases: [
+    {
+      constant: admin,
+      database: dbAdminModel,
+      service: AdminService,
+      endpoint: AdminEndpoint,
+      internal: AdminInternal,
+      slice: AdminSlice,
+    },
+  ],
   uses: {
     dummyValue: "dummyValue123",
   },

@@ -50,6 +50,7 @@ export class DatabaseRegistry {
     return this.#modelSets.scalar.has(modelRef);
   }
   static setDatabase(refName: string, { Input, Doc, Model, Middleware, Filter }: Database) {
+    const databaseModel = { refName, input: Input, doc: Doc, model: Model, middleware: Middleware, filter: Filter };
     if (!this.#database.has(refName))
       this.#database.set(refName, {
         refName,
@@ -62,6 +63,7 @@ export class DatabaseRegistry {
     [Input, Doc, Model, Middleware].forEach((modelRef) => {
       this.#modelRefNameMap.set(modelRef, refName);
     });
+    return databaseModel;
   }
   static getDatabase<AllowEmpty extends boolean = false>(
     refName: string,

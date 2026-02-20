@@ -8,7 +8,7 @@ import type { Job, Queue } from "bullmq";
 import type { ServerWebSocket } from "bun";
 import { adapt } from "@akanjs/service";
 
-export interface DefaultServerSignalMethods {
+export interface ServerSignal {
   readonly websocket: ServerWebSocket;
   readonly queue: Queue;
 }
@@ -50,7 +50,7 @@ export type ServerSignalCls<
     >
       ? (...args: ServerArgs) => Promise<Job<FieldToValue<Returns>>>
       : never;
-  } & DefaultServerSignalMethods,
+  } & ServerSignal,
   {
     readonly refName: EnpCls["refName"];
     readonly [ENDPOINT_META_KEY]: _EndpointInfoObj;

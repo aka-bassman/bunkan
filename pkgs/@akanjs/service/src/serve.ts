@@ -19,6 +19,7 @@ import {
 } from "./injectInfo";
 import type { DatabaseService } from "./types";
 import type { Connection } from "mongoose";
+import { ServiceRegistry } from ".";
 
 interface ServiceOptions {
   enabled?: boolean;
@@ -26,9 +27,11 @@ interface ServiceOptions {
 }
 export type ServiceType = "database" | "plain";
 
-export interface DefaultServiceMethods {
+export interface Service {
   readonly logger: Logger;
   readonly connection: Connection;
+  onInit(): Promise<void>;
+  onDestroy(): Promise<void>;
 }
 
 export type ServiceCls<
@@ -36,14 +39,12 @@ export type ServiceCls<
   Methods = {},
   InjectMap extends { [key: string]: InjectInfo } = {},
 > = Cls<
-  Methods & ExtractInjectInfoObject<InjectMap> & DefaultServiceMethods,
+  Methods & ExtractInjectInfoObject<InjectMap> & Service,
   {
     readonly refName: RefName;
     readonly type: ServiceType;
     readonly [INJECT_META_KEY]: InjectMap;
     readonly enabled: boolean;
-    onInit: () => Promise<void>;
-    onDestroy: () => Promise<void>;
   }
 >;
 
@@ -130,10 +131,8 @@ export function serve(
   const injectInfoMap = injectBuilder(injectionBuilder(refName));
   if (serviceType === "database")
     Object.assign(injectInfoMap, {
-      [`${refName}Model`]: new InjectInfo("database", {
-        additionalPropKeys: ["__databaseModel"],
-        parentRefName: refName,
-      }),
+      [`${refName}Model`]: new InjectInfo("database", { parentRefName: refName }),
+      __databaseModel: new InjectInfo("database", { parentRefName: refName }),
     });
   const srvRef =
     extSrvs[0] ??
@@ -153,6 +152,5 @@ export function serve(
         //
       }
     };
-
   return srvRef;
 }

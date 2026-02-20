@@ -3,7 +3,7 @@ import { type ConstantModel, type DocumentModel, type QueryOf } from "@akanjs/co
 import type { HydratedDocument, Model as MongooseModel, PipelineStage, ProjectionType, Schema } from "mongoose";
 
 import type { DatabaseCls, ExtractQuery, ExtractSort, FilterCls, FilterInstance } from ".";
-import type { DatabaseModelAdaptor } from "./database";
+import type { DatabaseInstance } from "./database";
 import { type LoaderBuilder, makeLoaderBuilder, LOADER_META_KEY, type ModelCls } from "./loaderInfo";
 
 export type CRUDEventType = "create" | "update" | "remove";
@@ -64,7 +64,7 @@ export const into = <
   _QueryOfDoc,
   _Query = ExtractQuery<Filter>,
   _Sort = ExtractSort<Filter>,
-  _DatabaseModel = DatabaseModelAdaptor<
+  _DatabaseModel = DatabaseInstance<
     T,
     _DocInput,
     Doc,

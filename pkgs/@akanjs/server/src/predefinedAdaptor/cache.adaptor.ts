@@ -70,7 +70,7 @@ export class RedisCache
           };
           await createTunnel(tunnelOptions, serverOptions, redis.sshOptions, forwardOptions);
           return await createRedis(`redis://localhost:${port}`);
-        } else return await createRedis(`redis://localhost:${port}`);
+        } else return await createRedis(`redis://localhost:6379`);
       }
     ),
   }))

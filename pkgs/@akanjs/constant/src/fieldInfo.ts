@@ -42,8 +42,8 @@ export type FieldToValue<Field, MapValue = any> = Field extends null
     ? Map<string, FieldToValue<MapValue>>
     : Field extends (infer F)[]
       ? FieldToValue<F>[]
-      : Field extends typeof PrimitiveScalar
-        ? Field[typeof PRIMITIVE_SERVER_VALUE]
+      : Field extends { [PRIMITIVE_SERVER_VALUE]: infer V }
+        ? V
         : Field extends EnumInstance<string, infer V>
           ? V
           : Field extends Cls

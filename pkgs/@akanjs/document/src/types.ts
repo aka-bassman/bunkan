@@ -3,8 +3,10 @@ import type { Document, HydratedDocument, ProjectionType, Schema } from "mongoos
 import type { FilterInfo } from ".";
 import type { DocumentModel } from "@akanjs/constant";
 
-export type DataInputOf<Input, Obj> = {
-  [K in keyof Input as K extends K ? K : never]: Input[K] extends any[] ? Input[K] | undefined : Input[K];
+export type DataInputOf<Input = any, Obj = any> = {
+  [K in keyof Input as Input[K] extends (...args: any[]) => any ? never : K]: Input[K] extends any[]
+    ? Input[K] | undefined
+    : Input[K];
 } & Partial<Obj>;
 
 export type GetDocObject<D> = GetStateObject<Omit<D, Exclude<keyof Document, "id"> | "__v">>;
@@ -40,18 +42,18 @@ export interface FilterArgProps {
 //   optArrDepth: number;
 // }
 
-export interface ListQueryOption<Sort, Obj> {
+export interface ListQueryOption<Sort = never, Obj = any> {
   skip?: number | null;
   limit?: number | null;
   sort?: Sort | null;
   sample?: number;
   select?: ProjectionType<Obj>;
 }
-export interface FindQueryOption<Sort, Obj> {
+export interface FindQueryOption<Sort = never, Obj = any> {
   skip?: number | null;
   sort?: Sort | null;
   sample?: boolean;
   select?: ProjectionType<Obj>;
 }
 
-export type SchemaOf<Mdl, Doc> = Schema<null, Mdl, Doc, undefined, null, Mdl>;
+export type SchemaOf<Mdl = any, Doc = any> = Schema<null, Mdl, Doc, undefined, null, Mdl>;

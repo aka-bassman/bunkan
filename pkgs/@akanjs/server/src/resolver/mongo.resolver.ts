@@ -1,9 +1,7 @@
 import {
   ID,
-  type BaseEnv,
   type Dayjs,
   type PrimitiveScalar,
-  type SshOptions,
   Int,
   Float,
   Any,
@@ -12,8 +10,6 @@ import {
   applyFnToArrayObjects,
   type PromiseOrObject,
 } from "@akanjs/base";
-import { adapt } from "@akanjs/service";
-import { createTunnel, type ForwardOptions, type ServerOptions, type TunnelOptions } from "tunnel-ssh";
 import { ConstantRegistry, type FieldProps, type ConstantCls, FIELD_META, type QueryOf } from "@akanjs/constant";
 import * as mongoose from "mongoose";
 import {
@@ -25,96 +21,38 @@ import {
   type CRUDEventType,
   type SaveEventType,
   type DatabaseCls,
+  DatabaseRegistry,
 } from "@akanjs/document";
 import { isDayjs } from "dayjs";
 
-export interface DatabaseAdaptor {
-  resolveDatabase(database: DatabaseModel): mongoose.Model<any>;
-}
-
-interface MongoEnv extends BaseEnv {
-  mongo?: { username?: string; password?: string; sshOptions?: SshOptions };
-}
-
-export class MongoDatabase
-  extends adapt("mongoDatabase", ({ env, use }) => ({
-    mongo: env(
-      async ({
-        appName,
-        environment,
-        serveDomain,
-        operationMode,
-        repoName,
-        mongo = {
-          sshOptions: {
-            host: `${appName}-${environment}.${serveDomain}`,
-            port: 32767,
-            username: process.env.TUNNEL_USERNAME ?? "root",
-            password: process.env.TUNNEL_PASSWORD ?? repoName,
-            dstPort: 27017,
-          },
+export class MongoResolver {
+  static resolveDatabase(database: DatabaseModel): Mdl<any, any> {
+    const schema = this.#createSchema(
+      database.doc,
+      {
+        createdAt: {
+          type: Date,
+          get: (date: Date | null) => (date ? dayjs(date) : date),
+          set: (day: Dayjs | null) => (day ? dayjs(day).toDate() : day),
         },
-      }: MongoEnv) => {
-        const dbName = `${appName}-${environment}`;
-        const authInfo = mongo.password ? `${mongo.username}:${mongo.password}@` : "";
-        const createMongo = async (uri: string) => {
-          return await mongoose.connect(uri);
-        };
-        if (process.env.MONGO_URI) return await createMongo(process.env.MONGO_URI);
-        else if (environment === "local") return await createMongo(`mongodb://localhost:27017/${dbName}`);
-        const DEFAULT_CLOUD_PORT = 30000;
-        const environmentPort =
-          environment === "main" ? 3000 : environment === "develop" ? 2000 : environment === "debug" ? 1000 : 0;
-        const SERVICE_PORT = 200;
-        const port = operationMode === "local" ? DEFAULT_CLOUD_PORT + environmentPort + SERVICE_PORT : 27017;
-        if (operationMode === "cloud")
-          return await createMongo(
-            `mongodb+srv://${authInfo}mongo-svc.${appName}-${environment}.svc.cluster.local/${dbName}?authSource=${dbName}&readPreference=primary&ssl=false&retryWrites=true`
-          );
-        else if (operationMode === "local") {
-          const tunnelOptions: TunnelOptions = { autoClose: true, reconnectOnError: false };
-          const serverOptions: ServerOptions = { port };
-          const forwardOptions: ForwardOptions = {
-            srcAddr: "0.0.0.0",
-            srcPort: port,
-            dstAddr: `mongo-0.mongo-svc.${appName}-${environment}`,
-            dstPort: 27017,
-          };
-          await createTunnel(tunnelOptions, serverOptions, mongo.sshOptions, forwardOptions);
-          return await createMongo(
-            `mongodb://${authInfo}localhost:${port}/${dbName}?authSource=${dbName}&readPreference=primary&ssl=false&retryWrites=true&directConnection=true`
-          );
-        } else return await createMongo(`mongodb://localhost:27017/${dbName}`);
-      }
-    ),
-  }))
-  implements DatabaseAdaptor
-{
-  // override async onInit(): Promise<void> {
-  //   this.mongo.connection.
-  // }
-  resolveDatabase(database: DatabaseModel) {
-    const schema = this.#createSchema(database.doc, {
-      createdAt: {
-        type: Date,
-        get: (date: Date | null) => (date ? dayjs(date) : date),
-        set: (day: Dayjs | null) => (day ? dayjs(day).toDate() : day),
+        updatedAt: {
+          type: Date,
+          get: (date: Date | null) => (date ? dayjs(date) : date),
+          set: (day: Dayjs | null) => (day ? dayjs(day).toDate() : day),
+        },
       },
-      updatedAt: {
-        type: Date,
-        get: (date: Date | null) => (date ? dayjs(date) : date),
-        set: (day: Dayjs | null) => (day ? dayjs(day).toDate() : day),
-      },
-    });
+      this.#getDefaultSchemaOptions()
+    );
     Object.getOwnPropertyNames(database.doc.prototype).forEach((name) => {
       if (name === "constructor") return;
       schema.methods[name] = Object.getOwnPropertyDescriptor(database.doc.prototype, name)?.value;
     });
     const onSchema = Object.getOwnPropertyDescriptor(database.middleware.prototype, "onSchema")?.value;
     onSchema?.(schema);
-    const schemaOptions = this.#getDefaultSchemaOptions();
-    const model = mongoose.model(database.refName, schema, schemaOptions);
-    return model;
+    console.log("schemaOptions", database.refName);
+    const model = mongoose.model(database.refName, schema);
+    console.log(database.refName, model);
+    return model as unknown as Mdl<any, any>;
   }
   static #primitiveMongoTypeMap = new Map<PrimitiveScalar, any>([
     [ID, ObjectId],
@@ -126,13 +64,13 @@ export class MongoDatabase
     [Boolean, Boolean],
     [Date, Date],
   ]);
-  #applyMongoProp(schemaProps: any, field: FieldProps, key: string) {
+  static #applyMongoProp(schemaProps: any, field: FieldProps, key: string) {
     if (["id", "createdAt", "updatedAt"].includes(key) || field.fieldType === "resolve") return;
     const type = field.isClass
       ? field.isScalar
         ? this.#createSchema(field.modelRef)
         : ObjectId
-      : (MongoDatabase.#primitiveMongoTypeMap.get(field.modelRef) ?? field.modelRef);
+      : (this.#primitiveMongoTypeMap.get(field.modelRef) ?? field.modelRef);
     let prop: any = {};
     if (field.optArrDepth) {
       prop.type = type;
@@ -164,8 +102,7 @@ export class MongoDatabase
       prop.required = !field.nullable;
       if (field.isMap) {
         prop.of =
-          MongoDatabase.#primitiveMongoTypeMap.get(field.of as PrimitiveScalar) ??
-          this.#createSchema(field.of as ConstantCls);
+          this.#primitiveMongoTypeMap.get(field.of as PrimitiveScalar) ?? this.#createSchema(field.of as ConstantCls);
         if (!field.default) prop.default = new Map();
       }
       if (field.default !== null) {
@@ -219,23 +156,23 @@ export class MongoDatabase
   }
 
   static #schemaMap = new Map<string, mongoose.Schema>();
-  #createSchema(
+  static #createSchema(
     modelRef: ConstantCls | DatabaseCls,
     schemaProps: mongoose.SchemaDefinition = {},
-    schemaOptions?: mongoose.SchemaOptions
+    schemaOptions: mongoose.SchemaOptions = {}
   ): mongoose.Schema {
-    const refName = ConstantRegistry.getRefName(modelRef);
-    const predefinedSchema = MongoDatabase.#schemaMap.get(refName);
+    const refName = DatabaseRegistry.getRefName(modelRef);
+    const predefinedSchema = this.#schemaMap.get(refName);
     if (predefinedSchema) return predefinedSchema;
     Object.entries(modelRef[FIELD_META]).forEach(([key, field]) => {
       this.#applyMongoProp(schemaProps, field.getProps(), key);
     });
     const schema = new mongoose.Schema(schemaProps, schemaOptions);
-    MongoDatabase.#schemaMap.set(refName, schema);
+    this.#schemaMap.set(refName, schema);
     return schema;
   }
 
-  #getDefaultSchemaOptions<TSchema = any, TDocument = any>(): any {
+  static #getDefaultSchemaOptions<TSchema = any, TDocument = any>(): any {
     return {
       toJSON: { getters: false, virtuals: true },
       toObject: { getters: false, virtuals: true },

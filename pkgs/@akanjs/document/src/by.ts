@@ -13,7 +13,7 @@ type HydratedDocumentWithId<TDocument> = Omit<
   HydratedDocument<TDocument, DefaultDocMtds<TDocument>>,
   "id" | "set" | "save"
 > & { id: string } & DefaultDocMtds<TDocument>;
-export type Doc<M> = HydratedDocumentWithId<DocumentModel<M>>;
+export type Doc<M = any> = HydratedDocumentWithId<DocumentModel<M>>;
 
 export const by = <
   Model,
