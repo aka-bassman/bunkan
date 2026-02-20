@@ -1,4 +1,4 @@
-import type { Guard } from "@akanjs/adaptor";
+import type { Guard } from "./guard";
 import { Any, type Assign, type Cls, type MergeAllKeyOfObjects } from "@akanjs/base";
 import type { DocumentModel, QueryOf } from "@akanjs/constant";
 import { buildSlice, type SliceBuilder, type SliceInfo } from "./sliceInfo";

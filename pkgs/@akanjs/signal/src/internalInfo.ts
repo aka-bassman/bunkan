@@ -1,6 +1,6 @@
 import { Any, type PromiseOrObject, type Cls, type UnCls } from "@akanjs/base";
 import type { ConstantFieldTypeInput, DocumentModel, FieldToValue, PlainTypeToFieldType } from "@akanjs/constant";
-import type { InternalArgCls } from "@akanjs/adaptor";
+import type { InternalArgCls } from "./internalArg";
 import type { Job } from "bullmq";
 
 import type { ArgType, SignalOption } from "./types";

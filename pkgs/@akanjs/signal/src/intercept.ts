@@ -1,5 +1,5 @@
 import type { Cls } from "@akanjs/base";
-import type { SignalContext } from "./__signalContext";
+import type { SignalContext } from "./signalContext";
 import {
   injectionBuilder,
   type InjectBuilder,

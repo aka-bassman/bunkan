@@ -32,7 +32,6 @@
       "@akanjs/constant": ["./pkgs/@akanjs/constant/index.ts"],
       "@akanjs/dictionary": ["./pkgs/@akanjs/dictionary/index.ts"],
       "@akanjs/document": ["./pkgs/@akanjs/document/index.ts"],
-      "@akanjs/adaptor": ["./pkgs/@akanjs/adaptor/index.ts"],
       "@akanjs/service": ["./pkgs/@akanjs/service/index.ts"],
       "@akanjs/signal": ["./pkgs/@akanjs/signal/index.ts"],
       "@akanjs/server": ["./pkgs/@akanjs/server/index.ts"]

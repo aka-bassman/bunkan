@@ -1,5 +1,5 @@
-import type { Guard } from "./__guard";
-import type { SignalContext } from "./__signalContext";
+import type { Guard } from "./guard";
+import type { SignalContext } from "./signalContext";
 
 export class Public implements Guard {
   static name = "Public";

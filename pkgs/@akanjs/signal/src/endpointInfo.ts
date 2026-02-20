@@ -7,7 +7,7 @@ import type {
   PlainTypeToFieldType,
   PurifiedModel,
 } from "@akanjs/constant";
-import type { InternalArgCls } from "@akanjs/adaptor";
+import type { InternalArgCls } from "./internalArg";
 
 import type { ArgType, SignalOption } from "./types";
 import type { ServiceModule } from "@akanjs/service";

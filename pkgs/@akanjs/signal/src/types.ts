@@ -1,5 +1,5 @@
 import { baseEnv, type Cls, type Environment, type UnCls } from "@akanjs/base";
-import type { Guard } from "@akanjs/adaptor";
+import type { Guard } from "./guard";
 
 export const argTypes = ["body", "param", "query", "upload", "msg", "room"] as const;
 export type ArgType = (typeof argTypes)[number];

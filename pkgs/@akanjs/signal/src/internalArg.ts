@@ -1,7 +1,5 @@
 import type { Cls } from "@akanjs/base";
-import type { ArgsOption } from "@akanjs/signal";
-import type { Socket } from "socket.io";
-import type { SignalContext } from "./__signalContext";
+import type { SignalContext } from "./signalContext";
 
 export interface InternalArg<ArgType = any> {
   getArg: (context: SignalContext) => ArgType | null;

@@ -10,7 +10,7 @@ import type {
   PurifiedModel,
   QueryOf,
 } from "@akanjs/constant";
-import type { InternalArgCls } from "@akanjs/adaptor";
+import type { InternalArgCls } from "./internalArg";
 
 import type { EndpointArgProps } from "./endpointInfo";
 import type { ArgType, SignalOption } from "./types";
