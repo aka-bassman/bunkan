@@ -125,7 +125,8 @@ export class AdminService extends serve(dbAdmin, ({ plug, service, signal }) => 
   baseService: service<BaseService>(),
 })) {
   override async onInit(): Promise<void> {
-    console.log(await this.listAny());
+    // console.log(this.adminSignal.archiveAdmin);
+    console.log(this.adminSignal.pubsubAddAdmin);
     return Promise.resolve();
   }
   test() {
@@ -151,7 +152,11 @@ export class AdminInternal extends internal(srv.admin, ({ initialize, process })
 
 export class AdminSlice extends slice(srv.admin, {}, () => ({})) {}
 
-export class AdminEndpoint extends endpoint(srv.admin, ({ query, mutation, pubsub, message }) => ({})) {}
+export class AdminEndpoint extends endpoint(srv.admin, ({ query, mutation, pubsub, message }) => ({
+  pubsubAddAdmin: pubsub(Int).exec(function () {
+    //
+  }),
+})) {}
 
 export class AdminServerSignal extends serverSignal(AdminEndpoint, AdminInternal) {}
 
@@ -166,6 +171,7 @@ const app = new AkanApp({
       endpoint: AdminEndpoint,
       internal: AdminInternal,
       slice: AdminSlice,
+      serverSignal: AdminServerSignal,
     },
   ],
   uses: {

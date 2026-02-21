@@ -10,26 +10,26 @@ const getSerializeFn = (inputRef: Cls) => {
 };
 const serializeInput = <Input = any>(
   value: Input | Input[],
-  inputRef: ConstantCls<Input>,
+  inputRef: ConstantCls<Input> | PrimitiveScalar,
   arrDepth: number
 ): Input | Input[] => {
   if (arrDepth && Array.isArray(value))
     return value.map((v) => serializeInput(v, inputRef, arrDepth - 1) as Input) as unknown as Input[];
-  else if (inputRef.prototype === Map.prototype) {
-    const [valueRef] = getNonArrayModel(inputRef);
+  else if ((inputRef as MapConstructor).prototype === Map.prototype) {
+    const [valueRef] = getNonArrayModel(inputRef as Cls);
     const serializeFn = getSerializeFn(valueRef);
     return Object.fromEntries(
       [...(value as Map<string, any>).entries()].map(([key, val]) => [key, applyFnToArrayObjects(val, serializeFn)])
     ) as unknown as Input;
-  } else if (PrimitiveRegistry.has(inputRef)) {
-    const serializeFn = getSerializeFn(inputRef);
+  } else if (PrimitiveRegistry.has(inputRef as Cls)) {
+    const serializeFn = getSerializeFn(inputRef as Cls);
     return serializeFn(value) as Input;
   }
-  if (!ConstantRegistry.isScalar(inputRef))
+  if (!ConstantRegistry.isScalar(inputRef as Cls))
     return value as { id: string } as Input; // id string
   else
     return Object.fromEntries(
-      Object.entries(inputRef[FIELD_META]).map(([key, field]) => [
+      Object.entries((inputRef as ConstantCls)[FIELD_META]).map(([key, field]) => [
         key,
         serializeInput((value as { [key: string]: any })[key], field.modelRef, field.arrDepth),
       ])
@@ -37,7 +37,7 @@ const serializeInput = <Input = any>(
 };
 
 export const serialize = (
-  argRef: ConstantCls,
+  argRef: ConstantCls | PrimitiveScalar,
   arrDepth: number,
   value: any,
   { nullable = false }: { nullable?: boolean }

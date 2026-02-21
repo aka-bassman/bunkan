@@ -1,37 +1,40 @@
 import { adapt } from "@akanjs/service";
-import { Queue, Worker, type ConnectionOptions, Job } from "bullmq";
+import { Queue, Worker, type ConnectionOptions, Job, type JobsOptions } from "bullmq";
 import { RedisCache } from "./cache.adaptor";
-import { Int, type BaseEnv } from "@akanjs/base";
+import { Int, type BaseEnv, baseEnv } from "@akanjs/base";
 
 export interface QueueAdaptor {
-  //
+  registerProcessWorker(key: string, handler: (job: Job) => Promise<void>): Worker;
+  registerProcessQueue(key: string, args: any[], jobOptions?: JobsOptions): Promise<Job>;
 }
 
 export class BullQueue
   extends adapt("bullQueue", ({ plug, env }) => ({
     redis: plug(RedisCache, (redisCache) => redisCache.getClient()),
-    prefix: env((env: BaseEnv) => `queue:${env.repoName}:${env.appName}:${env.environment}:${env.operationMode}`),
+    queue: plug(
+      RedisCache,
+      (redisCache) =>
+        new Queue(`queue-${baseEnv.repoName}-${baseEnv.appName}-${baseEnv.environment}-${baseEnv.operationMode}`, {
+          connection: redisCache.getClient() as ConnectionOptions,
+          defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
+        })
+    ),
+    prefix: env((env: BaseEnv) => `queue-${env.repoName}-${env.appName}-${env.environment}-${env.operationMode}`),
   }))
   implements QueueAdaptor
 {
   override async onInit(): Promise<void> {
     //
   }
-  // registerProcessWorker(key: string, internalInfo: InternalInfo<"process">): Worker {
-  //   const worker = new Worker(
-  //     `${this.prefix}:${key}`,
-  //     async (job: Job) => {
-  //       console.log(job.data);
-  //     },
-  //     { connection: this.redis as ConnectionOptions }
-  //   );
-  //   return worker;
-  // }
-  // registerProcessQueue(key: string, internalInfo: InternalInfo<"process">): Queue {
-  //   const queue = new Queue(`${this.prefix}:${key}`, {
-  //     connection: this.redis as ConnectionOptions,
-  //     defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
-  //   });
-  //   return queue;
-  // }
+  getQueue(): Queue {
+    return this.queue;
+  }
+  registerProcessWorker(key: string, handler: (job: Job) => Promise<void>): Worker {
+    const worker = new Worker(`${this.prefix}:${key}`, handler, { connection: this.redis as ConnectionOptions });
+    return worker;
+  }
+  async registerProcessQueue(key: string, args: any[], jobOptions?: JobsOptions): Promise<Job> {
+    const job = await this.queue.add(`${this.prefix}:${key}`, args, jobOptions);
+    return job;
+  }
 }

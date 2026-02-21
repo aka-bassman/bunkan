@@ -1,4 +1,5 @@
 import {
+  Base,
   BaseEndpoint,
   BaseInternal,
   type EndpointCls,
@@ -41,7 +42,7 @@ import { baseEnv, type BaseEnv, type Cls } from "@akanjs/base";
 import { collectAdaptors, resolveAdaptorHierarchy } from "./resolveAdaptorHierarchy";
 import { resolveServiceHierarchy } from "./resolveServiceHierarchy";
 import { Logger } from "@akanjs/common";
-import { DatabaseResolver, ServiceResolver } from "./resolver";
+import { DatabaseResolver, ServiceResolver, SignalResolver } from "./resolver";
 
 interface DatabaseModule {
   constant: ConstantModel;
@@ -50,12 +51,14 @@ interface DatabaseModule {
   endpoint: EndpointCls;
   internal: InternalCls;
   slice: SliceCls;
+  serverSignal: ServerSignalCls;
 }
 
 interface ServiceModule {
   endpoint: EndpointCls;
   internal: InternalCls;
   service: ServiceCls;
+  serverSignal: ServerSignalCls;
 }
 
 interface ScalarModule {
@@ -66,6 +69,7 @@ interface ScalarModule {
 
 export class AkanApp {
   status: "stopped" | "starting" | "running" | "stopping" = "stopped";
+  #server: Bun.Server<undefined> | null = null;
   readonly name: string;
   readonly logger: Logger;
   readonly #database = new Map<string, DatabaseModule>();
@@ -97,6 +101,8 @@ export class AkanApp {
     adaptor: new Map<AdaptorCls, Adaptor>(),
     databaseAdaptorCls: new Map<string, AdaptorCls>(),
     databaseAdapor: new Map<AdaptorCls, DatabaseModel>(),
+    serverSignalCls: new Map<string, ServerSignalCls>(),
+    serverSignal: new Map<ServerSignalCls, ServerSignal>(),
     signalAdaptorCls: new Map<string, AdaptorCls>(),
     signalAdapor: new Map<AdaptorCls, ServerSignal>(),
     serviceCls: new Map<string, ServiceCls>(),
@@ -113,12 +119,19 @@ export class AkanApp {
       scalars?: ScalarModule[];
       uses?: { [key: string]: any };
       env?: BaseEnv;
+      prefix?: string;
+      websocketPrefix?: string;
     } = {},
     name = "AkanApp"
   ) {
     this.name = name;
     this.logger = new Logger(name);
-    this.#service.set("base", { endpoint: BaseEndpoint, internal: BaseInternal, service: BaseService });
+    this.#service.set("base", {
+      endpoint: BaseEndpoint,
+      internal: BaseInternal,
+      service: BaseService,
+      serverSignal: Base,
+    });
     this.props.databases
       ?.filter((mod) => mod.service.enabled)
       .forEach((mod) => {
@@ -144,20 +157,18 @@ export class AkanApp {
     this.status = "starting";
     await this.#initializeUses();
     await this.#initializeAdaptor();
+    await this.#initializeServerSignal();
     await this.#initializeService();
-    // const getAdaptor = (refName: string): Adaptor => {
-    //   const adaptor = this.#live.adaptor.get(refName);
-    //   if (!adaptor) throw new Error(`Adaptor ${refName} is not initialized`);
-    //   return adaptor;
-    // };
+
     const port = process.env.PORT ?? 8080;
     this.logger.verbose(`${this.name} is serving on port ${port}`);
-    Bun.serve({
+    this.#server = Bun.serve({
       port, // defaults to $BUN_PORT, $PORT, $NODE_PORT otherwise 3000
       fetch(req) {
         return new Response("404!");
       },
     });
+
     this.status = "running";
     this.logger.info(`🚀 ${this.name} is running on port ${port}`);
     return this;
@@ -194,6 +205,21 @@ export class AkanApp {
       })
     );
   }
+  async #initializeServerSignal() {
+    const serverSignalClsEntries = [
+      ...[...this.#service.values()].map((mod) => [mod.serverSignal.refName, mod.serverSignal] as const),
+      ...[...this.#database.values()].map((mod) => [mod.serverSignal.refName, mod.serverSignal] as const),
+    ];
+    await Promise.all(
+      serverSignalClsEntries.map(async ([refName, serverSignalCls]) => {
+        const serverSignal = new serverSignalCls();
+        await InjectInfo.resolveInjection(serverSignal, serverSignalCls, this.#registry, this.props.env ?? baseEnv);
+        SignalResolver.resolveServerSignal(serverSignalCls, () => this.#server);
+        this.#registry.serverSignalCls.set(refName, serverSignalCls);
+        this.#registry.serverSignal.set(serverSignalCls, serverSignal);
+      })
+    );
+  }
   async #initializeService() {
     const serviceMap = new Map<string, ServiceCls>([
       ...[...this.#service.values()].map((mod) => [mod.service.refName, mod.service] as const),
@@ -220,5 +246,15 @@ export class AkanApp {
         })
       );
     }
+  }
+  #registerServerSignal(): { routes: Record<string, any>; websocket?: any } {
+    const routes: Record<string, any> = {};
+    const getServer = () => this.#server;
+
+    // TODO: register signal routes from this.#registry.serverSignal
+    // getServer()를 런타임에 호출하면 이미 초기화된 this.#server를 반환
+    // 예: getServer().publish(topic, data)
+
+    return { routes };
   }
 }

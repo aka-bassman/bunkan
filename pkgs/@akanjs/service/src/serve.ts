@@ -29,7 +29,7 @@ export type ServiceType = "database" | "plain";
 
 export interface Service {
   readonly logger: Logger;
-  readonly connection: Connection;
+  // readonly connection: Connection;
   onInit(): Promise<void>;
   onDestroy(): Promise<void>;
 }

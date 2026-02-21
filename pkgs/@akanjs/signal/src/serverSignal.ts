@@ -4,13 +4,14 @@ import { InternalInfo } from "./internalInfo";
 import { ENDPOINT_META_KEY, type EndpointCls } from "./endpoint";
 import { INTERNAL_META_KEY, type InternalCls } from "./internal";
 import type { DocumentModel, FieldToValue } from "@akanjs/constant";
-import type { Job, Queue } from "bullmq";
+import type { Job, JobsOptions, Queue } from "bullmq";
 import type { ServerWebSocket } from "bun";
-import { adapt } from "@akanjs/service";
+import { BullQueue, adapt, type QueueAdaptor, type Adaptor, INJECT_META_KEY, type AdaptorCls } from "@akanjs/service";
+import type { Logger } from "@akanjs/common";
 
-export interface ServerSignal {
+export interface ServerSignal extends Adaptor {
   readonly websocket: ServerWebSocket;
-  readonly queue: Queue;
+  readonly queue: QueueAdaptor;
 }
 
 export type ServerSignalCls<
@@ -26,7 +27,7 @@ export type ServerSignalCls<
       ? K
       : never]: IntCls[typeof INTERNAL_META_KEY][K];
   },
-> = Cls<
+> = AdaptorCls<
   {
     [K in keyof _EndpointInfoObj]: _EndpointInfoObj[K] extends EndpointInfo<
       any,
@@ -48,23 +49,23 @@ export type ServerSignalCls<
       any,
       infer Returns
     >
-      ? (...args: ServerArgs) => Promise<Job<FieldToValue<Returns>>>
+      ? (...args: [...args: ServerArgs, jobOptions?: JobsOptions]) => Promise<Job<FieldToValue<Returns>>>
       : never;
-  } & ServerSignal,
-  {
-    readonly refName: EnpCls["refName"];
-    readonly [ENDPOINT_META_KEY]: _EndpointInfoObj;
-    readonly [INTERNAL_META_KEY]: _InternalInfoObj;
-  }
->;
+  } & ServerSignal
+> & {
+  readonly refName: EnpCls["refName"];
+  readonly [ENDPOINT_META_KEY]: _EndpointInfoObj;
+  readonly [INTERNAL_META_KEY]: _InternalInfoObj;
+  readonly [INJECT_META_KEY]: { queue: QueueAdaptor };
+};
 
 export const serverSignal = <EnpCls extends EndpointCls, IntCls extends InternalCls>(
   endpointRef: EnpCls,
   internalRef: IntCls
 ): ServerSignalCls<EnpCls, IntCls> => {
-  return class ServerSignal extends adapt(`${endpointRef.refName}Signal`, ({ use }) => ({
-    websocket: use<ServerWebSocket>(),
-    queue: use<Queue>(),
+  return class ServerSignal extends adapt(`${endpointRef.refName}Signal`, ({ plug }) => ({
+    // websocket: use<ServerWebSocket>(),
+    queue: plug(BullQueue),
   })) {
     static readonly [ENDPOINT_META_KEY] = Object.fromEntries(
       Object.entries(endpointRef[ENDPOINT_META_KEY])

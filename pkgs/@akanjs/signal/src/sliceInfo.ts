@@ -12,7 +12,7 @@ import type {
 } from "@akanjs/constant";
 import type { InternalArgCls } from "./internalArg";
 
-import type { EndpointArgProps } from "./endpointInfo";
+import { EndpointInfo, type ArgInfo, type EndpointArgProps } from "./endpointInfo";
 import type { ArgType, SignalOption } from "./types";
 import type { ServiceModule } from "@akanjs/service";
 
@@ -32,12 +32,7 @@ export class SliceInfo<
   readonly light: Cls<Light>;
   readonly insight: Cls<Insight>;
   readonly argNames: ArgNames = [] as unknown as ArgNames;
-  readonly args: {
-    type: ArgType;
-    name: string;
-    argRef: ConstantFieldTypeInput;
-    option?: EndpointArgProps<boolean>;
-  }[] = [];
+  readonly args: ArgInfo<EndpointArgProps<boolean>>[] = [];
   readonly internalArgs: {
     type: InternalArgCls;
     option?: EndpointArgProps<boolean>;
@@ -57,11 +52,11 @@ export class SliceInfo<
     Arg extends ParamFieldType,
     _ClientArg = FieldToValue<Arg>,
     _ServerArg = DocumentModel<_ClientArg>,
-  >(name: ArgName, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
+  >(name: ArgName, arg: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "param", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("param", name, arg, option));
     return this as unknown as SliceInfo<
       T,
       Full,
@@ -81,11 +76,11 @@ export class SliceInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: ArgName, argRef: Arg, option?: EndpointArgProps) {
+  >(name: ArgName, arg: Arg, option?: EndpointArgProps) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "body", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("body", name, arg, option));
     return this as unknown as SliceInfo<
       T,
       Full,
@@ -105,15 +100,10 @@ export class SliceInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: ArgName, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
+  >(name: ArgName, arg: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     this.argNames.push(name);
-    this.args.push({
-      type: "query",
-      name,
-      argRef,
-      option: { ...option, nullable: true },
-    });
+    this.args.push(EndpointInfo.getArgInfo("query", name, arg, { ...option, nullable: true }));
     return this as unknown as SliceInfo<
       T,
       Full,

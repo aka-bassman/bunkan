@@ -6,6 +6,7 @@ import type { Job } from "bullmq";
 import type { ArgType, SignalOption } from "./types";
 import type { ServiceModule } from "@akanjs/service";
 import type { Doc } from "@akanjs/document";
+import { EndpointInfo, type ArgInfo } from "./endpointInfo";
 
 type InternalType = "resolveField" | "interval" | "cron" | "timeout" | "init" | "destroy" | "process";
 
@@ -23,12 +24,7 @@ export class InternalInfo<
   Nullable extends boolean = boolean,
 > {
   readonly type: ReqType;
-  readonly args: {
-    type: Extract<ArgType, "msg">;
-    name: string;
-    argRef: any;
-    option?: InternalArgProps<boolean>;
-  }[] = [];
+  readonly args: ArgInfo<InternalArgProps<boolean>>[] = [];
   readonly internalArgs: {
     type: InternalArgCls;
     option?: InternalArgProps<boolean>;
@@ -51,10 +47,10 @@ export class InternalInfo<
     Arg extends ConstantFieldTypeInput = PlainTypeToFieldType<ExplicitType>,
     Nullable extends boolean = false,
     _FieldToValue = FieldToValue<Arg>,
-  >(name: string, argRef: Arg, option?: InternalArgProps<Nullable>) {
+  >(name: string, arg: Arg, option?: InternalArgProps<Nullable>) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
-    this.args.push({ type: "msg", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("msg", name, arg, option));
     return this as unknown as InternalInfo<
       ReqType,
       Srvs,

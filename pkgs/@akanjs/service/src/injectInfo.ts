@@ -1,5 +1,5 @@
 import type { Adaptor, AdaptorCls, Service, ServiceCls } from ".";
-import type { ServerSignal } from "@akanjs/signal";
+import type { ServerSignal, ServerSignalCls } from "@akanjs/signal";
 import {
   ConstantRegistry,
   type ConstantFieldTypeInput,
@@ -32,6 +32,8 @@ export interface InjectRegistry {
   adaptor: Map<AdaptorCls, Adaptor>;
   databaseAdaptorCls: Map<string, AdaptorCls>;
   databaseAdapor: Map<AdaptorCls, DatabaseModel>;
+  serverSignalCls: Map<string, ServerSignalCls>;
+  serverSignal: Map<ServerSignalCls, ServerSignal>;
   signalAdaptorCls: Map<string, AdaptorCls>;
   signalAdapor: Map<AdaptorCls, ServerSignal>;
   serviceCls: Map<string, ServiceCls>;
@@ -154,8 +156,16 @@ export class InjectInfo<
     injectInfo: InjectInfo<"signal">,
     registry: InjectRegistry
   ) {
-    //
-    // Object.defineProperty(instance, propKey, { value, writable: false, enumerable: true });
+    if (!propKey.endsWith("Signal"))
+      throw new Error(
+        `Signal inject key must end with "***Signal", current key is "${propKey} on ${injectInfo.parentRefName}"`
+      );
+    const injectSignalRefName = propKey;
+    const serverSignalCls = registry.serverSignalCls.get(injectSignalRefName);
+    if (!serverSignalCls) throw new Error(`Server signal "${injectSignalRefName}" is not registered`);
+    const serverSignal = registry.serverSignal.get(serverSignalCls);
+    if (!serverSignal) throw new Error(`Server signal "${injectSignalRefName}" is not initialized`);
+    Object.defineProperty(instance, propKey, { value: serverSignal, writable: false, enumerable: true });
   }
   static async #injectPlug(
     instance: Adaptor | Service,

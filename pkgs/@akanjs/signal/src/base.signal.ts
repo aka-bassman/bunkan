@@ -68,4 +68,4 @@ export class BaseEndpoint extends endpoint(srv.base, ({ query, mutation, message
 })) {}
 
 export class Base extends serverSignal(BaseEndpoint, BaseInternal) {}
-SignalRegistry.registerService(BaseInternal, BaseEndpoint);
+SignalRegistry.registerService(BaseInternal, BaseEndpoint, Base);

@@ -1,5 +1,15 @@
-import type { Dayjs, Any, PromiseOrObject, UnCls, Cls } from "@akanjs/base";
+import {
+  type Dayjs,
+  type Any,
+  type PromiseOrObject,
+  type UnCls,
+  type Cls,
+  type EnumInstance,
+  getNonArrayModel,
+  isEnum,
+} from "@akanjs/base";
 import type {
+  ConstantFieldType,
   ConstantFieldTypeInput,
   DocumentModel,
   FieldToValue,
@@ -18,6 +28,16 @@ export interface EndpointArgProps<Optional extends boolean = false> {
   nullable?: Optional;
   example?: string | number | boolean | Dayjs;
 }
+
+export interface ArgInfo<ArgProps = any> {
+  type: ArgType;
+  name: string;
+  argRef: ConstantFieldType;
+  arrDepth: number;
+  enum?: EnumInstance;
+  option?: ArgProps;
+}
+
 export class EndpointInfo<
   ReqType extends EndpointType = EndpointType,
   Srvs extends { [key: string]: any } = { [key: string]: any },
@@ -31,12 +51,7 @@ export class EndpointInfo<
 > {
   readonly type: ReqType;
   readonly argNames: ArgNames = [] as unknown as ArgNames;
-  readonly args: {
-    type: ArgType;
-    name: string;
-    argRef: any;
-    option?: EndpointArgProps<boolean>;
-  }[] = [];
+  readonly args: ArgInfo<EndpointArgProps<boolean>>[] = [];
   readonly internalArgs: {
     type: InternalArgCls;
     option?: EndpointArgProps<boolean>;
@@ -44,6 +59,25 @@ export class EndpointInfo<
   readonly returnRef: Returns;
   readonly signalOption: SignalOption<Returns, Nullable, any>;
   execFn: ((...args: [...ServerArgs, ...InternalArgs]) => any) | null = null;
+
+  static getArgInfo(
+    type: ArgType,
+    name: string,
+    arg: ConstantFieldTypeInput,
+    option?: EndpointArgProps<boolean>
+  ): ArgInfo {
+    const [singleArg, arrDepth] = getNonArrayModel(arg as Cls);
+    const isArgEnum = isEnum(singleArg);
+    const argRef = isArgEnum ? (arg as EnumInstance).type : arg;
+    return {
+      type,
+      name,
+      argRef: argRef as ConstantFieldType,
+      arrDepth,
+      enum: isArgEnum ? (singleArg as EnumInstance) : undefined,
+      option,
+    };
+  }
 
   constructor(type: ReqType, returnRef: Returns, signalOption: SignalOption<Returns, Nullable> = {}) {
     this.type = type;
@@ -55,11 +89,11 @@ export class EndpointInfo<
     Arg extends ParamFieldType,
     _ClientArg = FieldToValue<Arg>,
     _ServerArg = DocumentModel<_ClientArg>,
-  >(name: string, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
+  >(name: string, arg: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "param", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("param", name, arg, option));
     return this as unknown as EndpointInfo<
       ReqType,
       Srvs,
@@ -80,10 +114,10 @@ export class EndpointInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: ArgName, argRef: Arg, option?: EndpointArgProps<Optional>) {
+  >(name: ArgName, arg: Arg, option?: EndpointArgProps<Optional>) {
     if (this.execFn) throw new Error("Query function is already set");
     this.argNames.push(name);
-    this.args.push({ type: "body", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("body", name, arg, option));
     return this as unknown as EndpointInfo<
       ReqType,
       Srvs,
@@ -103,11 +137,11 @@ export class EndpointInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: string, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
+  >(name: string, arg: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "room", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("room", name, arg, option));
     return this as unknown as EndpointInfo<
       ReqType,
       Srvs,
@@ -128,11 +162,11 @@ export class EndpointInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: string, argRef: Arg, option?: EndpointArgProps<Optional>) {
+  >(name: string, arg: Arg, option?: EndpointArgProps<Optional>) {
     if (this.execFn) throw new Error("Query function is already set");
     else if (this.args.at(-1)?.option?.nullable) throw new Error("Last argument is nullable");
     this.argNames.push(name);
-    this.args.push({ type: "msg", name, argRef, option });
+    this.args.push(EndpointInfo.getArgInfo("msg", name, arg, option));
     return this as unknown as EndpointInfo<
       ReqType,
       Srvs,
@@ -152,15 +186,10 @@ export class EndpointInfo<
     _ArgType = unknown extends ExplicitType ? FieldToValue<Arg> : ExplicitType,
     _ClientArg = PurifiedModel<_ArgType>,
     _ServerArg = DocumentModel<_ArgType>,
-  >(name: string, argRef: Arg, option?: Omit<EndpointArgProps, "nullable">) {
+  >(name: string, arg: Arg, option?: Omit<EndpointArgProps, "nullable">) {
     if (this.execFn) throw new Error("Query function is already set");
     this.argNames.push(name);
-    this.args.push({
-      type: "query",
-      name,
-      argRef,
-      option: { ...option, nullable: true },
-    });
+    this.args.push(EndpointInfo.getArgInfo("query", name, arg, { ...option, nullable: true }));
     return this as unknown as EndpointInfo<
       ReqType,
       Srvs,
